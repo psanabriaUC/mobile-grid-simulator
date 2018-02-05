@@ -1,0 +1,104 @@
+package edu.isistan.seas.proxy.bufferedproxy;
+
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Iterator;
+
+import edu.isistan.mobileGrid.jobs.Job;
+import edu.isistan.mobileGrid.jobs.JobStatsUtils;
+import edu.isistan.mobileGrid.network.NetworkModel;
+import edu.isistan.mobileGrid.node.Device;
+import edu.isistan.mobileGrid.node.InputTransferInfo;
+import edu.isistan.seas.proxy.DataAssignment;
+import edu.isistan.seas.proxy.DescendingDataAssignmentComparator;
+import edu.isistan.seas.proxy.RemainingDataTransferingEvaluator;
+import edu.isistan.simulator.Logger;
+import edu.isistan.simulator.Simulation;
+
+public class MinMinComEnergy extends BufferedSchedulerProxy {
+
+	public MinMinComEnergy(String name, String bufferValue) {
+		super(name, bufferValue);
+	}
+
+	@Override
+	protected void queueJob(Job job) {
+		int dataTransferRequirement = job.getInputSize() + job.getOutputSize();
+		boolean inserted = false;
+		int queueIndex = 0;
+		while (!inserted) {
+			if (queueIndex < bufferedJobs.size()) {
+				Job currentJob = bufferedJobs.get(queueIndex);
+				int currentJobDataTransferRequirement = currentJob.getInputSize() + currentJob.getOutputSize();
+				if (currentJobDataTransferRequirement > dataTransferRequirement) {
+					bufferedJobs.add(queueIndex, job);
+					inserted = true;
+				} else {
+					queueIndex++;
+				}
+			} else {
+				bufferedJobs.add(job);
+				inserted = true;
+			}
+		}
+	}
+
+	@Override
+	protected void assignBufferedJobs() {
+		DataAssignment.evaluator = new RemainingDataTransferingEvaluator();
+		Comparator<DataAssignment> comp = new DescendingDataAssignmentComparator(DataAssignment.evaluator);
+		Collections.sort(totalDataPerDevice, comp);
+
+		for (Job dataJob : bufferedJobs) {
+			int assignment = -1;
+			double assignment_remaining_energy = -1;
+
+			for (int index = 0; index < totalDataPerDevice.size(); index++) {
+				DataAssignment da = totalDataPerDevice.get(index);
+				double job_energy = da.getDevice().getEnergyWasteInTransferingData(dataJob.getInputSize());
+				job_energy += da.getDevice().getEnergyWasteInTransferingData(dataJob.getOutputSize());
+				double rem_energy = DataAssignment.evaluator.eval(da) - job_energy;
+				if (rem_energy > 0 && rem_energy > assignment_remaining_energy) {
+					assignment = index;
+					assignment_remaining_energy = rem_energy;
+				}
+			}
+			if (assignment != -1) {
+				totalDataPerDevice.get(assignment).scheduleJob(dataJob);
+				Collections.sort(totalDataPerDevice, comp);
+			} else
+				break;
+		}
+
+		for (Iterator<DataAssignment> iterator = totalDataPerDevice.iterator(); iterator.hasNext();) {
+			DataAssignment deviceAssignment = (DataAssignment) iterator.next();
+			Device current = deviceAssignment.getDevice();
+			InputTransferInfo prev = null;
+			for (Iterator<Job> iterator2 = deviceAssignment.getAssignedJobs().iterator(); iterator2.hasNext();) {
+				Job job = (Job) iterator2.next();
+				JobStatsUtils.setJobAssigned(job);
+				Logger.logEntity(this, "Job assigned to ", job.getJobId(), current);
+				current.incrementIncommingJobs();
+
+				long subMessagesCount = (long) Math.ceil(job.getInputSize() / (double) MESSAGE_SIZE);
+				long lastMessageSize = job.getInputSize() - (subMessagesCount - 1) * MESSAGE_SIZE;
+				InputTransferInfo transferInfo = new InputTransferInfo(current, job, subMessagesCount, 0,
+						lastMessageSize);
+				transfersPending.put(job.getJobId(), transferInfo);
+
+				if (prev == null) {
+					idSend++;
+					long messageSize = transferInfo.messagesCount == 1 ? transferInfo.lastMessageSize : MESSAGE_SIZE;
+					/*
+					 * temporal cast (int)messageSize, message size must be long
+					 */
+					long time = NetworkModel.getModel().send(this, current, job.getJobId(), (int) messageSize, job);
+					long currentSimTime = Simulation.getTime();
+					JobStatsUtils.transfer(job, current, time - currentSimTime, currentSimTime);
+				} else
+					prev.nextJobId = job.getJobId();
+				prev = transferInfo;
+			}
+		}
+	}
+}

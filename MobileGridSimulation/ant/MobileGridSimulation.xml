@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<project default="create_run_jar" name="Create Runnable Jar for Project MobileGridSimulation with Jar-in-Jar Loader">
+    <!--this file was created by Eclipse Runnable JAR file Export Wizard-->
+    <!--ANT 1.7 is required-->
+    <!--define folder properties-->
+    <property name="dir.buildfile" value="."/>
+    <property name="dir.workspace" value="${dir.buildfile}/../.."/>
+    <property name="dir.jarfile" value="${dir.workspace}/experiments_GA"/>
+    <target name="create_run_jar">
+        <jar destfile="${dir.jarfile}/MobileGridSimulation.jar">
+            <manifest>
+                <attribute name="Main-Class" value="org.eclipse.jdt.internal.jarinjarloader.JarRsrcLoader"/>
+                <attribute name="Rsrc-Main-Class" value="edu.isistan.seas.Simulation"/>
+                <attribute name="Class-Path" value="."/>
+                <attribute name="Rsrc-Class-Path" value="./ commons-math3-3.3-javadoc.jar commons-math3-3.3.jar hsqldb.jar mybatis-3.2.6.jar batteryInterpolator.jar profileOffsetRemover.jar rawData2SimData.jar"/>
+            </manifest>
+            <zipfileset src="jar-in-jar-loader.zip"/>
+            <fileset dir="${dir.workspace}/MobileGridSimulation/bin"/>
+            <zipfileset dir="${dir.workspace}/MobileGridSimulation/lib/commons-math3-3.3" includes="commons-math3-3.3-javadoc.jar"/>
+            <zipfileset dir="${dir.workspace}/MobileGridSimulation/lib/commons-math3-3.3" includes="commons-math3-3.3.jar"/>
+            <zipfileset dir="${dir.workspace}/MobileGridSimulation/lib" includes="hsqldb.jar"/>
+            <zipfileset dir="${dir.workspace}/MobileGridSimulation/lib" includes="mybatis-3.2.6.jar"/>
+            <zipfileset dir="${dir.workspace}/MobileGridSimulation/sim_input/device_profile/tools_and_doc" includes="batteryInterpolator.jar"/>
+            <fileset dir="${dir.workspace}/MobileGridSimulation/sim_input/device_profile/tools_and_doc"/>
+            <zipfileset dir="${dir.workspace}/MobileGridSimulation/sim_input/device_profile/tools_and_doc" includes="profileOffsetRemover.jar"/>
+            <zipfileset dir="${dir.workspace}/MobileGridSimulation/sim_input/device_profile/tools_and_doc" includes="rawData2SimData.jar"/>
+            <fileset dir="${dir.workspace}/MobileGrid/bin"/>
+            <fileset dir="${dir.workspace}/Simulator/bin"/>
+        </jar>
+    </target>
+</project>
