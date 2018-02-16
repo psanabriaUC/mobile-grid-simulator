@@ -76,18 +76,8 @@ public class HungarianBasedProxy extends BufferedSchedulerProxy {
 		/////////////////////////////////////////////////////////////////////////
 		//map jobs to nodes
 		for (int i=0; i < assignments.length; i++){
-			assignJob(bufferedJobs.get(assignments[i][1]),mapOfDevices.get(i));
+			queueJobTransferring(mapOfDevices.get(i), bufferedJobs.get(assignments[i][1]));
 		}		
-	}
-
-	private void assignJob(Job job, Device device) {		
-		Logger.logEntity(this, "Job assigned to ", job.getJobId() ,device);
-		long time=NetworkModel.getModel().send(this, device, idSend++,  job.getInputSize(), job);
-		long currentSimTime = Simulation.getTime();
-		JobStatsUtils.transfer(job, device, time-currentSimTime,currentSimTime);
-		DataAssignment da = deviceToAssignmentsMap.get(device);
-		da.setMbToBeReceived(da.getMbToBeReceived()+((double)((double)(job.getInputSize())/1024)/1024));
-		da.setMbToBeSend(da.getMbToBeSend()+((double)((double)(job.getOutputSize())/1024)/1024));
 	}
 	
 }

@@ -1,76 +1,118 @@
 package edu.isistan.mobileGrid.network;
 
-import java.util.HashMap;
 import java.util.Set;
 
+import edu.isistan.mobileGrid.node.Device;
 import edu.isistan.simulator.Entity;
 import edu.isistan.simulator.Event;
 import edu.isistan.simulator.Simulation;
 
+/**
+ * Base class of all possible models that simulate the network through which all entities in the grid are connected.
+ * This class is in charge of relaying messages from one entity to another and simulating their links.
+ */
 public abstract class NetworkModel {
 		
-	public static final String NETWORK_ENTITY_NAME="network";
-	private static NetworkModel MODEL;
-	public static double AckMessageSizeInBytes = 0; //2346; //http://stackoverflow.com/questions/5543326/what-is-the-total-length-of-pure-tcp-ack-sent-over-ethernet
-	
-	public abstract long getTransmissionTime(Node scr, Node dst, int messageSize);
-	
+	private static final String NETWORK_ENTITY_NAME = "network";
+	private static double AckMessageSizeInBytes = 0; //2346; //http://stackoverflow.com/questions/5543326/what-is-the-total-length-of-pure-tcp-ack-sent-over-ethernet
+
+    /**
+     * Singleton holder.
+     */
+	private static volatile NetworkModel MODEL;
+
+    /**
+     * Lock for implementing double checked locking pattern.
+     */
+	private static final Object sLock = new Object();
+
+	/*
 	public static void setModel(NetworkModel model){
-		MODEL=model;
+		MODEL = model;
 	}
-	
-	public static NetworkModel getModel(){
-		if(MODEL==null)
-			MODEL=new SimpleNetworkModel();
-		return MODEL;
-	}
-	
-	protected NetworkDelayEntity networkDelayEntity;
-	protected int entityId;
-	
-	/**
-	 * Might Cause IllegalArgumentException if other model was already created
-	 * and the simulation was not reseted
-	 */
-	protected NetworkModel(){
-		super();
-		this.networkDelayEntity=new NetworkDelayEntity(NETWORK_ENTITY_NAME);
-		Simulation.addEntity(this.networkDelayEntity);
-		this.entityId=Simulation.getEntityId(NETWORK_ENTITY_NAME);
-	}
+	*/
 
 	/**
-	 * Schedule a message to send
-	 * @param scr source
-	 * @param dst destiny
-	 * @param id message id (must be unique for each scr)
-	 * @param lenght 
-	 * @param data
+	 * Singleton pattern implementation.
+	 *
+	 * @return The concrete network model implementation.
 	 */
-	public abstract long send(Node scr, Node dst, int id,int lenght, Object data);
+	public static NetworkModel getModel() {
+		if (MODEL == null) {
+			synchronized (sLock) {
+				if(MODEL==null) {
+					MODEL = new SimpleNetworkModel();
+				}
+			}
+		}
+
+		return MODEL;
+	}
+
+	private NetworkDelayEntity networkDelayEntity;
+
+	/**
+	 * Might Cause IllegalArgumentException if other model was already created
+	 * and the simulation was not reset.
+	 */
+	protected NetworkModel() {
+		super();
+		this.networkDelayEntity = new NetworkDelayEntity(NETWORK_ENTITY_NAME);
+		Simulation.addEntity(this.networkDelayEntity);
+	}
+
+	public abstract long getTransmissionTime(Node scr, Node dst, int messageSize);
+
+
+    /**
+     * Sends a message through the network.
+     *
+     * @param source The sender of the message.
+     * @param destination The recipient of the message
+     * @param id An id for the message.
+     * @param length The size of the message in bytes.
+     * @param data The payload of the message.
+     * @param offset The order of a fragmented message. Used to reconstitute larger messages decomposed into several
+     *               smaller packages.
+     * @param lastMessage A flag indicating whether additional messages should be expected containing more data that
+     *                    should be appended to this message's payload.
+     * @param <T> The type of the payload object.
+     * @return The time of the simulation at which the sent message is expected to be received by the receiver.
+     */
+    public abstract <T> long send(Node source, Node destination, int id, int length, T data, int offset, boolean lastMessage);
+
 	/**
 	 * Adds a new node
-	 * @param n
+     *
+	 * @param n The node to add.
 	 */
 	public abstract void addNewNode(Node n);
+
 	/**
 	 * Adds new link
-	 * @param l
+     *
+	 * @param l The link to add.
 	 */
 	public abstract void addNewLink(Link l);
+
 	/**
 	 * Removes a node and all its associated links
-	 * @param n
+     *
+	 * @param n The node to be removed.
 	 */
 	public abstract void removeNode(Node n);
+
 	/**
 	 * Removes a link
-	 * @param l
+     *
+	 * @param l The link to be removed.
 	 */
 	public abstract void removeLink(Link l);
+
 	/**
 	 * Gets the nodes in the network
-	 * @return
+     *
+	 * @return The nodes in the network.
 	 */
 	public abstract Set<Node> getNodes();
 	
@@ -82,90 +124,42 @@ public abstract class NetworkModel {
 		AckMessageSizeInBytes = ackMessageSizeInBytes;
 	}
 
-	protected class NetworkDelayEntity extends Entity{
+    protected int getNetworkDelayEntityId() {
+        return networkDelayEntity.getId();
+    }
 
-		public NetworkDelayEntity(String name) {
+    /**
+	 * Proxy that simulates the overhead associated with data transmissions. When re-routing messages through this
+	 * entity, the {@link Device#onMessageReceived(Message)} method will be invoked on the destination device before
+     * relaying the respective message. As for the source, either {@link Device#onMessageSentAck(Message)} or
+     * {@link Device#fail(Message)} will be invoked to notify if the transfer was successful.
+	 */
+	protected class NetworkDelayEntity extends Entity {
+
+		NetworkDelayEntity(String name) {
 			super(name);
 		}
 
+		/**
+		 * Events defined by the {@link Message} class are relayed to both the sender and receiver so they can act upon
+		 * them and invoke custom message handling events. This serves to emulate an ACK/NACK for the sender, and to
+		 * emulate energy consumption due to network transmission overhead. The amount of energy used for this purpose
+		 * is to be defined by each {@link Entity} implementation.<br/>
+		 *
+		 * @param event The event that will be processed.
+		 */
 		@Override
-		public void processEvent(Event e) {
-			Message m=(Message) e.getData();
-			if((m.getScr().isOnline())&&(m.getDst().isOnline())){
-				m.dst.receive(m.scr, m.getId(), m);
-				m.scr.success(m.getId());
+		public void processEvent(Event event) {
+			Message message = (Message) event.getData();
+
+			if((message.getSource().isOnline()) && (message.getDestination().isOnline())){
+				message.getDestination().onMessageReceived(message);
+				message.getSource().onMessageSentAck(message);
 			} else {
-				m.getScr().fail(m.getId());
-				m.dst.failReception(m.getScr(),m.getId());
+				message.getSource().fail(message);
+				message.getDestination().failReception(message.getSource(), message.getId());
 			}
 		}
-		
-	}
-	
-	
-	public class Message{
-		public static final String STEAL_REQUEST_TYPE = "STEAL_REQUEST_TYPE";
-		public static final String TYPE = "TYPE";
-		public static final String SIZE = "SIZE";
-		
-		public static final int STEAL_MSG_SIZE = 2346+20; //http://stackoverflow.com/questions/5543326/what-is-the-total-length-of-pure-tcp-ack-sent-over-ethernet
-		//20 bytes are integrated by 16 bytes corresponding to a IPv6 address of the stealer node + 4 bytes corresponding to a integer that indicates the quantity of jobs to be stolen
-		
-		private int id;
-		private Node scr;
-		private Node dst;
-		private Object data;		
-		private HashMap<String,Object> attributes;
-		
-		public Message(int id, Node scr, Node dst, Object data) {
-			super();
-			this.id = id;
-			this.scr = scr;
-			this.dst = dst;
-			this.data = data;			
-		}
-		
-		public void setAttribute(String name, String value){
-			if (attributes == null) attributes = new HashMap<String,Object>();
-			attributes.put(name, value);
-		}
-		
-		public Object getAttribute(String name){
-			return attributes!=null && attributes.containsKey(name)?attributes.get(name):null;
-		}
-
-		public int getId() {
-			return id;
-		}
-
-		public void setId(int id) {
-			this.id = id;
-		}
-
-		public Node getScr() {
-			return scr;
-		}
-
-		public void setScr(Node scr) {
-			this.scr = scr;
-		}
-
-		public Node getDst() {
-			return dst;
-		}
-
-		public void setDst(Node dst) {
-			this.dst = dst;
-		}
-
-		public Object getData() {
-			return data;
-		}
-
-		public void setData(Object data) {
-			this.data = data;
-		}
-						
 	}
 	
 }

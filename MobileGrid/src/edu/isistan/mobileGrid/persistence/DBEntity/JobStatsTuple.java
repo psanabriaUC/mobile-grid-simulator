@@ -37,24 +37,26 @@ public class JobStatsTuple extends JobStats {
 	public void persist(SQLSession session){
 		
 		insertJobStats(session,this);		
-		Node firstNode = transfers.get(0);
-		boolean lastHop = transfers.size()==1 ? true : false;//in other words if there is only one transfer for the job then this transfer is the last hop of the chain of transfers		
+		Node firstNode = transfersInfo.get(0).getNode();
+		boolean lastHop = transfersInfo.size()==1 ? true : false;//in other words if there is only one transfer for the job then this transfer is the last hop of the chain of transfers
 				
 		if(!(firstNode instanceof Device)){
 			insertJobTransfer(session,this,null, (Entity)firstNode, 0,0,startTime,lastHop);//the transfer time between the an out of the grid device and the proxy does not matter so for that reason is cero.  
 		}
 		
-		for (int i=1; i<transfers.size()-1; i++){
-			Entity originNode = (Entity)transfers.get(i-1);
-			Entity destNode = (Entity)transfers.get(i);			
-			insertJobTransfer(session,this, (Entity)originNode, (Entity)destNode, transferTimes.get(i-1),i,startTransferTimes.get(i-1),lastHop);
+		for (int i = 1; i < transfersInfo.size() - 1; i++){
+			Entity originNode = (Entity)transfersInfo.get(i-1).getNode();
+			Entity destNode = (Entity)transfersInfo.get(i).getNode();
+			insertJobTransfer(session,this, (Entity)originNode, (Entity)destNode, transfersInfo.get(i-1).getTransferTime(),
+					i, transfersInfo.get(i-1).getStartTransferTime(), lastHop);
 		}
 		
 		if(!lastHop){
 			lastHop = true;
-			Entity originNode = (Entity)transfers.get(transfers.size()-2);
-			Entity destNode = (Entity)transfers.get(transfers.size()-1);			
-			insertJobTransfer(session,this, (Entity)originNode, (Entity)destNode, transferTimes.get(transferTimes.size()-1),transfers.size()-1,startTransferTimes.get(startTransferTimes.size()-1),lastHop);
+			Entity originNode = (Entity)transfersInfo.get(transfersInfo.size()-2).getNode();
+			Entity destNode = (Entity)transfersInfo.get(transfersInfo.size()-1).getNode();
+			insertJobTransfer(session,this, (Entity)originNode, (Entity)destNode, transfersInfo.get(transfersInfo.size()-1).getTransferTime(),
+                    transfersInfo.size()-1, transfersInfo.get(transfersInfo.size()-1).getStartTransferTime(), lastHop);
 		}
 	}
 	
@@ -109,7 +111,7 @@ public class JobStatsTuple extends JobStats {
 	}
 	
 	public int getLastTransferedNode(){
-		Entity executorNode = (Entity)transfers.get(transfers.size()-1);
+		Entity executorNode = (Entity)transfersInfo.get(transfersInfo.size()-1).getNode();
 		return dp.getDevice(executorNode.getName()).getDevice_id();	
 	}
 

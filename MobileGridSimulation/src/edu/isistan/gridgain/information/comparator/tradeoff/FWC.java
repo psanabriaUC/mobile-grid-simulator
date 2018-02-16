@@ -13,20 +13,22 @@ import edu.isistan.simulator.Simulation;
 public class FWC extends DeviceComparator {
 
 	@Override
-	public double getValue(Device arg0) {
-		double avgJob_N1 = getJobAvgTime(arg0);
-		if (avgJob_N1 < Math.E)
+	public double getValue(Device device) {
+		double avgJob_N1 = getJobAvgTime(device);
+		if (avgJob_N1 < Math.E) {
 			avgJob_N1 = Math.E;
-		return arg0.getLastBatteryLevelUpdate() / Math.log(avgJob_N1) / ( arg0.getNumberOfJobs() +1);
+		}
+		double nJobs = device.getJobsScheduledByProxy() + device.getNumberOfJobs() + 1;
+		return device.getLastBatteryLevelUpdate() / Math.log(avgJob_N1) / nJobs;
 	}
 
-	private double getJobAvgTime(Device arg0) {
+	private double getJobAvgTime(Device device) {
 		double result = 0;
 		int cant = 0;
 		double resutlNFinished = 0;
 		int cantNFinished = 0;
 
-		for(JobStats js:JobStatsUtils.getJobStatsExecutedIn(arg0)) {
+		for(JobStats js:JobStatsUtils.getJobStatsExecutedIn(device)) {
 			//Si es igual puedo ver si termino
 			double time = js.getTotalExecutionTime();
 			if (time > 0) {

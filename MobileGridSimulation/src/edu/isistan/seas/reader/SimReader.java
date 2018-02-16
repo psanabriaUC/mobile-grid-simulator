@@ -7,18 +7,15 @@ import java.io.IOException;
 import java.lang.reflect.Method;
 import java.sql.SQLException;
 import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.StringTokenizer;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
-import edu.isistan.gridgain.spi.loadbalacing.energyaware.GridEnergyAwareLoadbalancing;
-import edu.isistan.mobileGrid.network.Link;
-import edu.isistan.mobileGrid.network.NetworkModel;
-import edu.isistan.mobileGrid.network.NetworkModel.Message;
-import edu.isistan.mobileGrid.network.SimpleNetworkModel;
-import edu.isistan.mobileGrid.network.UpdateMsg;
+import edu.isistan.gridgain.spi.loadbalacing.energyaware.GridEnergyAwareLoadBalancing;
+import edu.isistan.mobileGrid.network.*;
 import edu.isistan.mobileGrid.node.Device;
 import edu.isistan.mobileGrid.node.SchedulerProxy;
 import edu.isistan.mobileGrid.persistence.IPersisterFactory;
@@ -42,13 +39,16 @@ public class SimReader {
 	
 	private String line;
 	private BufferedReader conf;
-	private ReentrantLock simLock;
-	private ReentrantLock eventLock;
-	private List<DeviceLoader> devices;
-	private Map<String,DeviceLoader> idDevices;
+	private ReentrantLock simLock = new ReentrantLock();
+	private Map<String, DeviceLoader> devices;
+
+    /**
+     * Flag to enable or disable energy consumption simulation due to network related tasks (e.g. data transfers).
+     */
 	private boolean networkEnergyManagementFlag = false;
 	private SimulationTuple simulationTuple = new SimulationTuple();	
 	//private boolean jobStealer=false;
+
 	/**
 	 * File format 
 	 * -scheduler
@@ -60,15 +60,15 @@ public class SimReader {
 	 * file
 	 * @param file
 	 */
-	public void read(String file, boolean storeInDB){		
-		this.simLock=new ReentrantLock();		
-		this.eventLock=new ReentrantLock();
+	public void read(String file, boolean storeInDB){
 		ISimulationPersister simPersister = persisterFactory.getSimulationPersister(); 
 		SQLSession session = simPersister.openSQLSession();
-		if(storeInDB)
-			generateSimulationId(session,simPersister);
+		if(storeInDB) {
+            generateSimulationId(session, simPersister);
+        }
 		try {
-			List<Thread> threads=new ArrayList<Thread>();
+            ExecutorService executorService = Executors.newFixedThreadPool(4);
+
 			this.conf=this.getReader(file);
 			simulationTuple.setName(file);
 			simulationTuple.setStart_time(new Timestamp(System.currentTimeMillis()));
@@ -83,7 +83,7 @@ public class SimReader {
 				else if(line.startsWith(";policy"))
 					this.loadPolicy();
 				else if(line.startsWith(";strategy"))
-					this.loadStragety();
+					this.loadStragegy();
 				else if(line.startsWith(";condition"))
 					this.loadCondition();
 				else if(line.startsWith(";link"))
@@ -103,17 +103,19 @@ public class SimReader {
 				else if(line.startsWith(";wifiSignalStrength"))
 					this.loadWifiSignalStrength();
 				else if(line.startsWith(";jobsEvent"))
-					threads.add(this.loadJobs());
+                    executorService.execute(this.loadJobs());
 				else throw new IllegalStateException(this.line+" is not a valid parameter");
 			}
-			for(DeviceLoader loader:this.devices) {
+
+            for(DeviceLoader loader: this.devices.values()) {
 				loader.setSimLock(this.simLock);
-				loader.setEventLock(this.eventLock);
-				loader.start();
-				threads.add(loader);
+
+				executorService.execute(loader);
 			}
-			for(Thread t:threads)
-				t.join();
+
+            executorService.shutdown();
+            executorService.awaitTermination(Long.MAX_VALUE, TimeUnit.MILLISECONDS);
+
 			this.conf.close();
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -137,7 +139,7 @@ public class SimReader {
 		UpdateMsg.STATUS_MSG_SIZE_IN_BYTES = statusMessageSize;
 		
 		System.out.println("Status message notification frequency (in millis): "+time);
-		System.out.println("Status message size (in bytes): "+UpdateMsg.STATUS_MSG_SIZE_IN_BYTES);
+		System.out.println("Status message size (in bytes): " + UpdateMsg.STATUS_MSG_SIZE_IN_BYTES);
 		this.nextLine();
 		
 	}
@@ -151,13 +153,14 @@ public class SimReader {
 
 	private void loadWifiSignalStrength() throws IOException {
 		this.nextLine();
-		while((this.line!=null)&&(!this.line.startsWith(";"))) {
+		while((this.line != null) && (!this.line.startsWith(";"))) {
 			StringTokenizer st = new StringTokenizer(line, ";");
 			String wifiSignalStrength = st.nextToken();
 			String nodeId = st.nextToken().trim();
-			DeviceLoader loader=this.idDevices.get(nodeId);
-			if(loader==null)
-				System.err.println("There is no such device "+nodeId);
+			DeviceLoader loader = this.devices.get(nodeId);
+			if(loader == null) {
+                System.err.println("There is no such device " + nodeId);
+            }
 			loader.setWifiSignalStrength(new Short(wifiSignalStrength));
 			this.nextLine();
 		}
@@ -169,10 +172,11 @@ public class SimReader {
 		if (lineParts.length > 1){
 			networkEnergyManagementFlag = Boolean.valueOf(lineParts[1]);			
 		}
-		System.out.println("NetworkEnergyManagementFlag: "+networkEnergyManagementFlag);		
+		System.out.println("NetworkEnergyManagementFlag: "+ networkEnergyManagementFlag);
 		//System.out.println("ACK Message size (in bytes): "+ NetworkModel.getModel().getAckMessageSizeInBytes());
-		if(simulationTuple.getPolicy().compareTo("")!=0)
-			System.out.println("StealRequest Message size (in bytes): "+ Message.STEAL_MSG_SIZE);
+		if(simulationTuple.getPolicy().compareTo("") != 0) {
+            System.out.println("StealRequest Message size (in bytes): " + Message.STEAL_MSG_SIZE);
+        }
 		this.nextLine();
 		
 	}
@@ -183,10 +187,10 @@ public class SimReader {
 		String clazzName = this.line.split(" ")[1].trim();
 		simulationTuple.setCondition(clazzName);
 		Class<StealingCondition> clazz=(Class<StealingCondition>)Class.forName(clazzName);
-		StealingCondition pol = clazz.newInstance();
-		this.setProperties(pol, clazz, this.line.split(" "), 2);
+		StealingCondition policy = clazz.newInstance();
+		this.setProperties(policy, clazz, this.line.split(" "), 2);
 		this.simLock.lock();
-		((StealerProxy)SchedulerProxy.PROXY).setCondition(pol);
+		((StealerProxy)SchedulerProxy.PROXY).setCondition(policy);
 		this.simLock.unlock();
 		this.nextLine();
 	}
@@ -205,7 +209,7 @@ public class SimReader {
 	}
 
 	@SuppressWarnings("unchecked")
-	private void loadStragety() throws Exception {
+	private void loadStragegy() throws Exception {
 		String clazzName = this.line.split(" ")[1].trim();
 		simulationTuple.setStrategy(clazzName);
 		Class<StealingStrategy> clazz=(Class<StealingStrategy>)Class.forName(clazzName);
@@ -250,7 +254,7 @@ public class SimReader {
 		DeviceComparator comp = clazz.newInstance();
 		this.setProperties(comp, clazz, this.line.split(" "), 2);
 		this.simLock.lock();
-		((GridEnergyAwareLoadbalancing)SchedulerProxy.PROXY).setDevComp(comp);
+		((GridEnergyAwareLoadBalancing)SchedulerProxy.PROXY).setDevComp(comp);
 		this.simLock.unlock();
 		this.nextLine();
 	}
@@ -261,7 +265,7 @@ public class SimReader {
 			StringTokenizer st = new StringTokenizer(line, ";");
 			String cpuFile = st.nextToken();
 			String nodeId = st.nextToken().trim();
-			DeviceLoader loader=this.idDevices.get(nodeId);
+			DeviceLoader loader=this.devices.get(nodeId);
 			if(loader==null)
 				System.err.println("There is no such device "+nodeId);
 			loader.setCPUFile(cpuFile);
@@ -275,7 +279,7 @@ public class SimReader {
 			StringTokenizer st = new StringTokenizer(line, ";");
 			String batFile = st.nextToken();
 			String nodeId = st.nextToken().trim();
-			DeviceLoader loader=this.idDevices.get(nodeId);
+			DeviceLoader loader=this.devices.get(nodeId);
 			if(loader==null)
 				System.err.println("There is no such device "+nodeId);
 			loader.setFullBatteryFile(batFile);
@@ -296,7 +300,7 @@ public class SimReader {
 			StringTokenizer st = new StringTokenizer(line, ";");
 			String batFile = st.nextToken();
 			String nodeId = st.nextToken().trim();
-			DeviceLoader loader=this.idDevices.get(nodeId);
+			DeviceLoader loader=this.devices.get(nodeId);
 			if(loader==null)
 				System.err.println("There is no such device "+nodeId);
 			loader.setBatteryFile(batFile);
@@ -307,8 +311,7 @@ public class SimReader {
 	private Thread loadJobs() throws IOException {
 		this.nextLine();
 		simulationTuple.setJobs_file(this.line);
-		Thread jobReader=new JobReader(this.simLock,this.eventLock,this.getReader(this.line),this.networkEnergyManagementFlag);
-		jobReader.start();
+		Thread jobReader = new JobReader(this.simLock, this.getReader(this.line), this.networkEnergyManagementFlag);
 		this.nextLine();
 		return jobReader;
 	}
@@ -316,9 +319,8 @@ public class SimReader {
 	private void loadNodes() throws IOException {
 		this.nextLine();
 		simulationTuple.setTopology_file(this.line);
-		DeviceReader dr=new DeviceReader(this.line, networkEnergyManagementFlag);
-		this.devices=dr.getDevices();
-		this.idDevices=dr.getIdDevices();
+		DeviceReader deviceReader = new DeviceReader(this.line, networkEnergyManagementFlag);
+		this.devices = deviceReader.getDevices();
 		this.nextLine();
 	}
 
@@ -342,20 +344,22 @@ public class SimReader {
 			arguments = schedulerConstructor[2].trim();
 		}
 		simulationTuple.setScheduler(clazzName);
-		//TODO:save arguments into the DB
+		// TODO: save arguments into the DB
 		@SuppressWarnings("unchecked")
-		Class<SchedulerProxy> clazz=(Class<SchedulerProxy>)Class.forName(clazzName);
+		Class<SchedulerProxy> clazz = (Class<SchedulerProxy>)Class.forName(clazzName);
 		this.simLock.lock();
 		
-		if (schedulerHasArguments)
-			 clazz.getConstructor(String.class,String.class).newInstance(PROXY_NAME,arguments);		
-		else
-			 clazz.getConstructor(String.class).newInstance(PROXY_NAME);
+		if (schedulerHasArguments) {
+			clazz.getConstructor(String.class, String.class).newInstance(PROXY_NAME, arguments);
+		} else {
+			clazz.getConstructor(String.class).newInstance(PROXY_NAME);
+		}
 		DeviceTuple proxyTuple = new DeviceTuple(PROXY_NAME,0,0,simulationTuple.getSim_id());
 		persisterFactory.getDevicePersister().saveDeviceIntoMemory(PROXY_NAME, proxyTuple);
 		this.simLock.unlock();
 		this.nextLine();
 	}
+
 	/*
 	 * TODO: Cargar estrategias de stealing
 	@SuppressWarnings("unchecked")

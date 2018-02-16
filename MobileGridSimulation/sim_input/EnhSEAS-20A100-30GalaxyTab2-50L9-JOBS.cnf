@@ -3,7 +3,8 @@
 ;nodeFile
 sim_input/nodes/20A100-30GalaxyTab2-50L9.cnf
 
-;loadBalancing: edu.isistan.seas.proxy.RemainingComputingPowerScheduler
+;loadBalancing: edu.isistan.gridgain.spi.loadbalacing.energyaware.GridEnergyAwareLoadBalancing
+;comparator: edu.isistan.gridgain.information.comparator.seas.EnhancedSEASComparator
 
 ;batteryFile
 sim_input/device_profile/L9/battery0.cnf; 00000000-0000-0000-0000-000000000001
@@ -312,7 +313,7 @@ sim_input/device_profile/GalaxyTab2/cpu0.cnf; 00000000-0000-0000-0000-0000000000
 sim_input/device_profile/GalaxyTab2/cpu0.cnf; 00000000-0000-0000-0000-000000000064
 ;jobsEvent
 #jobs/JOBS.cnf
-sim_input/jobs/2500_all_none.cnf
+sim_input/jobs/2500_all.cnf
 
 ;wifiSignalStrength
 -50; 00000000-0000-0000-0000-000000000001

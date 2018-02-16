@@ -7,7 +7,6 @@ import edu.isistan.mobileGrid.jobs.Job;
 import edu.isistan.mobileGrid.jobs.JobStatsUtils;
 import edu.isistan.mobileGrid.node.Device;
 import edu.isistan.mobileGrid.node.ExecutionManager;
-import edu.isistan.mobileGrid.node.SchedulerProxy;
 import edu.isistan.simulator.Event;
 import edu.isistan.simulator.Logger;
 import edu.isistan.simulator.Simulation;
@@ -22,24 +21,65 @@ import edu.isistan.simulator.Simulation;
  *
  */
 public class DefaultExecutionManager implements ExecutionManager {
+	private static final int PROFILE_CPU_IDLE = 0;
+	private static final int PROFILE_CPU_FULL = 1;
+	private static final long NO_OPS = 0l;
 
-	private final long NO_OPS=0l;
-	private int id;
+    /**
+     * The {@link Device} attached to this execution manager.
+     */
 	private Device device;
+
+    /**
+     * The processor speed in millions of instructions per second.
+     */
 	private long mips;
-	
+
+    /**
+     * The fraction of the CPU currently in use by the end-user (and therefore unavailable for background operations),
+     * as a value between 0 and 1, where 0 means the entire CPU is free for use, and 1 means it is completely hogged
+     * by the user. Therefore, the actual speed of the processor can be estimated by:
+     * {@link DefaultExecutionManager#mips} * (1 - cpu).
+     */
 	private double cpu;
-	
-	private List<Job> jobs=new LinkedList<Job>();
-	
+
+    /**
+     * List of assigned jobs pending to be executed.
+     */
+	private List<Job> pendingJobs = new LinkedList<>();
+
+    /**
+     * The battery manager attached to this device.
+     */
 	private DefaultBatteryManager batteryManager;
-	
+
+    /**
+     * Job currently being executed. Once assigned to this variable, the job should be removed from the
+     * {@link DefaultExecutionManager#pendingJobs} list.
+     */
 	private Job executing;
+
+    /**
+     * The number of instructions executed by this device throughout the simulation. Used for logging purposes.
+     */
 	private long executedOps;
+
+    /**
+     * The simulation timestamp at which the {@link DefaultExecutionManager#lastEvent} was scheduled.
+     */
 	private long lastEventTime;
+
+    /**
+     * A reference to the {@link Device#EVENT_TYPE_FINISH_JOB} event that was scheduled by this class to simulate
+     * the completion of the {@link Job} currently assigned to it.
+     */
 	private Event lastEvent;
 
-	private int finishedJob=0;
+    /**
+     * The amount of {@link Job} completed by this device. Used for logging purposes.
+     */
+	private int finishedJob = 0;
+
 	/**
 	 * Adds the job to the queue
 	 * checks if it can start to execute
@@ -48,24 +88,24 @@ public class DefaultExecutionManager implements ExecutionManager {
 	 */
 	@Override
 	public void addJob(Job job) {
-		this.jobs.add(job);
+		this.pendingJobs.add(job);
 		this.startExecute();
-		this.batteryManager.onCPUProfileChange();
+		if (isExecuting()) {
+			this.batteryManager.onCPUProfileChange(PROFILE_CPU_FULL);
+		} else {
+			this.batteryManager.onCPUProfileChange(PROFILE_CPU_IDLE);
+		}
+
 	}
 
 	@Override
 	public int getJobQueueSize() {
-		return this.jobs.size();
+		return this.pendingJobs.size();
 	}
 
 	@Override
-	public Job getJob(int index) {
-		return this.jobs.get(index);
-	}
-
-	@Override
-	public void removeJob(int index) {
-		this.jobs.remove(index);
+	public Job removeJob(int index) {
+		return this.pendingJobs.remove(index);
 	}
 
 	/**
@@ -79,16 +119,20 @@ public class DefaultExecutionManager implements ExecutionManager {
 		JobStatsUtils.success(job);
 		Logger.logEntity(device, "The device finished the job",job,
 				JobStatsUtils.timeToMinutes(JobStatsUtils.getJobStats(this.executing).getTotalExecutionTime()));
-		this.executing=null;
-		this.lastEvent=null;
+		this.executing = null;
+		this.lastEvent = null;
 		
 		// Execute new job		 
 		this.startExecute();
-		this.batteryManager.onCPUProfileChange();
-		if(!this.isExecuting()) Logger.logEntity(device, "The device has become lazy");
+		if (isExecuting()) {
+			this.batteryManager.onCPUProfileChange(PROFILE_CPU_FULL);
+		} else {
+			this.batteryManager.onCPUProfileChange(PROFILE_CPU_IDLE);
+			Logger.logEntity(device, "The device has become lazy");
+		}
 		
 		/*Yisel Log*/
-		Logger.logJob(job.getJobId(),device.getName(), device.getBatteryLevel(), job.getInputSize(), job.getOutputSize());
+		Logger.logJob(job.getJobId(), device.getName(), device.getBatteryLevel(), job.getInputSize(), job.getOutputSize());
 	}
 
 	/**
@@ -99,37 +143,31 @@ public class DefaultExecutionManager implements ExecutionManager {
 	public void onCPUEvent(double cpuUsage) {
 		//If there is no job, there is nothing to do
 		if(!this.isExecuting()){
-			this.cpu=cpuUsage;
+            this.cpu = cpuUsage;
 			return;
 		}
 		//get the old free mips
-		double freeMipms=this.getFreeMIPMS();
+		double freeMipms = this.getFreeMIPMS();
+
 		//Calculates how many ops it has executed since the last event}
 		//and updates the executed ops
-		this.executedOps+=(long) ((Simulation.getTime()-this.lastEventTime)*freeMipms);
-		if(this.executedOps>this.executing.getOps()) throw new IllegalStateException("It executed more ops ("+this.executedOps+") than the size of the job ("+this.executing.getOps()+")");
-		double toExecute=this.executing.getOps()-this.executedOps;
+		this.executedOps += (long) ((Simulation.getTime() - this.lastEventTime) * freeMipms);
+		if(this.executedOps > this.executing.getOps()) throw new IllegalStateException("It executed more ops (" +
+                this.executedOps+") than the size of the job (" + this.executing.getOps() + ")");
+		double toExecute = this.executing.getOps() - this.executedOps;
+
 		//Update process
-		this.cpu=cpuUsage;
-		freeMipms=this.getFreeMIPMS();
+        this.cpu = cpuUsage;
+		freeMipms = this.getFreeMIPMS();
 		//Reestimate the remaining time using the new free mips
-		double time=toExecute/freeMipms;
-		time+=Simulation.getTime();
+		double time = toExecute / freeMipms;
+		time += Simulation.getTime();
 		//Updates the information in the simulator		
-		this.lastEventTime=Simulation.getTime();
+		this.lastEventTime = Simulation.getTime();
 		Simulation.removeEvent(this.lastEvent);
-		this.lastEvent=Event.createEvent(Event.NO_SOURCE, (long)time, this.id, Device.EVENT_TYPE_FINISH_JOB, this.executing);
+		this.lastEvent=Event.createEvent(Event.NO_SOURCE, (long)time, this.device.getId(),
+                Device.EVENT_TYPE_FINISH_JOB, this.executing);
 		Simulation.addEvent(this.lastEvent);
-	}
-
-	@Override
-	public int getNumberOfJobs() {
-		return this.jobs.size()+(this.isExecuting() ? 1:0);
-	}
-
-	@Override
-	public double getCPUUsage() {
-		return this.cpu;
 	}
 
 	/**
@@ -138,72 +176,95 @@ public class DefaultExecutionManager implements ExecutionManager {
 	 */
 	@Override
 	public void shutdown() {
-		for(Job j:this.jobs)
-			JobStatsUtils.fail(j,NO_OPS);
-		if(this.isExecuting()){
-			
+		for(Job job : this.pendingJobs)
+			JobStatsUtils.fail(job, NO_OPS);
+		if(this.isExecuting()) {
 			JobStatsUtils.fail(this.executing,this.executedOps);
 			Simulation.removeEvent(this.lastEvent);
 		}
-		SchedulerProxy.PROXY.remove(this.device);
-		Logger.logEntity(device, "Device stopped. Failed jobs: "+(this.jobs.size()+(this.isExecuting() ? 1:0))+" finished jobs "+this.finishedJob);
+
+		Logger.logEntity(device, "Device stopped. Failed jobs: " +
+                (this.pendingJobs.size() + (this.isExecuting() ? 1 : 0)) + " finished jobs " + this.finishedJob);
 		
 		/*Yisel Log*/
-		int failedJobs = this.jobs.size()+(this.isExecuting() ? 1:0);
-		Logger.logDevice(device.getName(), this.finishedJob+failedJobs, this.finishedJob, device.getCurrentTransfersCount(),device.getCurrentTotalTransferCount(),device.getWifiRSSI(), device.getEnergyPercentageWastedInNetworkActivity(), device.getInitialJoules(), device.getAccEnergyInTransfering());
+		int failedJobs = this.pendingJobs.size() + (this.isExecuting() ? 1 : 0);
+		Logger.logDevice(device.getName(),
+                this.finishedJob + failedJobs,
+                this.finishedJob,
+                device.getCurrentTransfersCount(),
+                device.getCurrentTotalTransferCount(),
+                device.getWifiRSSI(),
+                device.getEnergyPercentageWastedInNetworkActivity(),
+                device.getInitialJoules(),
+                device.getAccEnergyInTransferring());
 	}
 
-	public int getActualCPUProfile() {
-		return this.isExecuting() ? 1 : 0;
-	}
-
-	public DefaultBatteryManager getBatteryManager() {
-		return batteryManager;
-	}
-
-	public void setBatteryManager(DefaultBatteryManager batteryManager) {
-		this.batteryManager = batteryManager;
-	}
-
-	protected boolean isExecuting(){
-		return this.executing!=null;
-	}
+	// public int getActualCPUProfile() {
+	// 	return this.isExecuting() ? 1 : 0;
+	// }
 	
 	/**
 	 * Start to execute a new job
 	 */
-	protected void startExecute(){
+	protected void startExecute() {
 		//if there is no jobs in the queue or it is already running
 		//there is nothing to do
-		if(this.isExecuting()||this.jobs.size()==0) return;
+		if (this.isExecuting() || this.pendingJobs.size() == 0) return;
 		//get the next job and update current information
-		this.executing=this.jobs.remove(0);
+		this.executing = this.pendingJobs.remove(0);
 		Logger.logEntity(this.device, "The device start executing ", this.executing);
 		JobStatsUtils.startExecute(this.executing);
-		this.executedOps=0;
-		this.lastEventTime=Simulation.getTime();
-		double freeMipms=this.getFreeMIPMS();
+
+		this.executedOps = 0;
+		this.lastEventTime = Simulation.getTime();
+		double freeMipms = this.getFreeMIPMS();
 		//Calculate time to finish under current settings
-		double time=((double)this.executing.getOps())/freeMipms;
-		time+=Simulation.getTime();
-		//updates the simulation
-		this.lastEvent=Event.createEvent(Event.NO_SOURCE, (long)time, this.id, Device.EVENT_TYPE_FINISH_JOB,this.executing);
+		double time = ((double) this.executing.getOps()) / freeMipms;
+		time += Simulation.getTime();
+		// updates the simulation
+		this.lastEvent = Event.createEvent(Event.NO_SOURCE, (long) time, this.device.getId(),
+                Device.EVENT_TYPE_FINISH_JOB, this.executing);
 		Simulation.addEvent(this.lastEvent);
 	}
 
+	// Getters and setters
+
+    @Override
+    public int getNumberOfJobs() {
+        return this.pendingJobs.size() + (this.isExecuting() ? 1 : 0);
+    }
+
+    @Override
+    public double getCPUUsage() {
+        return this.cpu;
+    }
+
+    public DefaultBatteryManager getBatteryManager() {
+        return batteryManager;
+    }
+
+    public void setBatteryManager(DefaultBatteryManager batteryManager) {
+        this.batteryManager = batteryManager;
+    }
+
+    protected boolean isExecuting(){
+        return this.executing != null;
+    }
+
 	/**
-	 * get the free mips
+	 * Gets the free mips.
 	 */
 	protected double getFreeMIPMS() {
-		double res=((double)this.mips)/1000d;//mips are divided by 1000 to get the instructions per millisecond instead of per second
-		return res*(1d-this.cpu);
+        // mips are divided by 1000 to get the instructions per millisecond instead of per second
+		double res = ((double) this.mips) / 1000d;
+		return res * (1d - this.cpu);
 	}
 	
 	@Override
 	public long getMIPS() {
 		return this.mips;
 	}
-	
+
 	public void setMips(long mips) {
 		this.mips = mips;
 	}
@@ -214,6 +275,5 @@ public class DefaultExecutionManager implements ExecutionManager {
 
 	public void setDevice(Device device) {
 		this.device = device;
-		this.id = Simulation.getEntityId(device.getName());
 	}
 }

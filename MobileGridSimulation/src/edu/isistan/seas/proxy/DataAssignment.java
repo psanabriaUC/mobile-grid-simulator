@@ -13,7 +13,7 @@ public class DataAssignment{
 	private Device device;
 	/**Total Megabytes representing the data the device should send (sum of job outputs)*/
 	private double mbToBeSend;
-	/**Total Megabytes representing the data the device should receive (sum of job inputs)*/
+	/**Total Megabytes representing the data the device should onMessageReceived (sum of job inputs)*/
 	private double mbToBeReceived;	
 	/**Amount of assigned jobs that the device is able to transfer completely, i.e., input + output, with its available energy*/
 	private int affordableJobCompletelyTransfered=0;

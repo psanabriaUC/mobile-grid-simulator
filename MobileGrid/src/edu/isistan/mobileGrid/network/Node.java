@@ -3,6 +3,13 @@ package edu.isistan.mobileGrid.network;
 
 public interface Node {
 
+    /**
+     * Gets the id of the node.
+     *
+     * @return The id of the node.
+     */
+    public int getId();
+
 	/**
 	 * Starts a transfer
 	 * @param scr
@@ -11,36 +18,40 @@ public interface Node {
 	public void incomingData(Node scr, int id);
 	
 	/**
-	 * Receive a job or update message from other node
-	 * @param scr
-	 * @param id
-	 * @param object
+	 * Receive a job or update message from other node.
+	 *
+	 * @param message
 	 */
-	public void receive(Node scr, int id, Object object);
-
+	public void onMessageReceived(Message<?> message);
 	
 	/**
 	 * ACK notification to the sender
-	 * @param id
+	 *
+	 * @param message
 	 */
-	public void success(int id);
+	public void onMessageSentAck(Message message);
+
 	/**
 	 * Fail notification to the sender
-	 * @param id
+     *
+	 * @param message The message that failed to be received.
 	 */
-	public void fail(int id);
+	public void fail(Message message);
 	
 	public boolean isOnline();
 	
 	/**
 	 * Notifies a transfer starting
+     *
 	 * @param dst
 	 * @param id
 	 * @param data
 	 */
 	public void startTransfer(Node dst, int id, Object data);
+
 	/**
 	 * Notifies transfer error
+     *
 	 * @param scr
 	 * @param id
 	 */

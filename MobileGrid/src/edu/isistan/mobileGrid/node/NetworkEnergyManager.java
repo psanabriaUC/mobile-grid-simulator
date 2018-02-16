@@ -1,18 +1,19 @@
 package edu.isistan.mobileGrid.node;
 
-import edu.isistan.mobileGrid.network.NetworkModel.Message;
+import edu.isistan.mobileGrid.network.Message;
+import edu.isistan.mobileGrid.network.Node;
 
-/**This interface describes methods that cause a decrement in the battery charge of a device that are particularly related to send or receive data through the network of the mobile grid
+/**This interface describes methods that cause a decrement in the battery charge of a device that are particularly related to send or onMessageReceived data through the network of the mobile grid
  * Author: mhirsch*/
 public interface NetworkEnergyManager {
 
 	/**Called when a device sends data through the network. The true value is returned if
 	 * the device could received the message passed as argument*/
-	public boolean onSendData(Message message);
+	public boolean onSendData(Node source, Node destination, long bytesSent);
 	
 	/**Called when a device receives data through the network. The true value is returned if
 	 * the device could received the message passed as argument*/
-	public boolean onReceieveData(Message message);
+	public boolean onReceiveData(Node source, Node destination, long bytesReceived);
 	
 	/**Returns the wifi Received Signal Strength of the device*/
 	public short getWifiRSSI();

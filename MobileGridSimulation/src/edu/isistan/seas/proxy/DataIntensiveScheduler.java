@@ -6,6 +6,7 @@ import java.util.Iterator;
 
 import edu.isistan.mobileGrid.jobs.Job;
 import edu.isistan.mobileGrid.jobs.JobStatsUtils;
+import edu.isistan.mobileGrid.network.Message;
 import edu.isistan.mobileGrid.network.Node;
 import edu.isistan.mobileGrid.node.Device;
 import edu.isistan.mobileGrid.node.SchedulerProxy;
@@ -34,11 +35,11 @@ public abstract class DataIntensiveScheduler extends SchedulerProxy {
 	}
 
 	@Override
-	public void processEvent(Event e) {
-		if(EVENT_JOB_ARRIVE!=e.getEventType()) throw new IllegalArgumentException("Unexpected event");
+	public void processEvent(Event event) {
+		if(EVENT_JOB_ARRIVE!= event.getEventType()) throw new IllegalArgumentException("Unexpected event");
 		if (!device_assignments_initialized) initializeDeviceAssignments();
 		
-		Job j=(Job)e.getData();
+		Job j=(Job) event.getData();
 		JobStatsUtils.addJob(j, this);		
 		Logger.logEntity(this, "Job arrived ", j.getJobId());
 		
@@ -67,15 +68,15 @@ public abstract class DataIntensiveScheduler extends SchedulerProxy {
 	}
 	
 	@Override
-	public void receive(Node scr, int id, Object data) {
-		if (data instanceof Job){//Update sent and received data of the corresponding node
-			Job jobResult = (Job) data;
+	public void onMessageReceived(Message message) {
+		if (message.getData() instanceof Job){ //Update sent and received data of the corresponding node
+			Job jobResult = (Job) message.getData();
 			DataAssignment assignment = jobAssignments.get(jobResult);
-			if(assignment!= null){
+			if(assignment != null){
 				assignment.setMbToBeReceived(assignment.getMbToBeReceived()-((double)((double)jobResult.getInputSize() / (double)(1024*1024))));
 				assignment.setMbToBeSend(assignment.getMbToBeSend()- ((double)((double)jobResult.getOutputSize() / (double)(1024*1024))));
 			}
 		}
-		super.receive(scr, id, data);	
+		super.onMessageReceived(message);
 	}
 }

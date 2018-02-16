@@ -13,27 +13,25 @@ public interface ExecutionManager {
 	 * @return
 	 */
 	public int getJobQueueSize();
-	/**
-	 * get a job
-	 * @param index
-	 * @return
-	 */
-	public Job getJob(int index);
+
 	/**
 	 * removes a job
 	 * @param index
 	 */
-	public void removeJob(int index);
+	public Job removeJob(int index);
+
 	/**
 	 * Call when a job is finished
 	 * @param job
 	 */
 	public void onFinishJob(Job job);
+
 	/**
 	 * Call when a CPU event arrives
 	 * @param cpuUsage
 	 */
 	public void onCPUEvent(double cpuUsage);
+
 	/**
 	 * Get number of jobs
 	 * @return

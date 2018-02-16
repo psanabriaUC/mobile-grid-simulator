@@ -3,8 +3,8 @@
 ;nodeFile
 sim_input/nodes/20A100-30GalaxyTab2-50L9.cnf
 
-;loadBalancing: edu.isistan.gridgain.spi.loadbalacing.energyaware.GridEnergyAwareLoadbalancing
-;comparator: edu.isistan.gridgain.information.comparator.seas.SEASPercentBased
+;loadBalancing: edu.isistan.gridgain.spi.loadbalacing.energyaware.GridEnergyAwareLoadBalancing
+;comparator: edu.isistan.gridgain.information.comparator.seas.EnhancedSEASComparator
 
 ;batteryFile
 sim_input/device_profile/L9/battery0.cnf; 00000000-0000-0000-0000-000000000001

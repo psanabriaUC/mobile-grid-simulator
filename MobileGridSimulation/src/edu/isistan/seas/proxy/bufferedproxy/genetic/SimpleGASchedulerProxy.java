@@ -4,13 +4,12 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 
+import edu.isistan.mobileGrid.node.TransferInfo;
 import org.apache.commons.math3.distribution.EnumeratedIntegerDistribution;
 
 import edu.isistan.mobileGrid.jobs.Job;
 import edu.isistan.mobileGrid.jobs.JobStatsUtils;
-import edu.isistan.mobileGrid.network.NetworkModel;
 import edu.isistan.mobileGrid.node.Device;
-import edu.isistan.mobileGrid.node.InputTransferInfo;
 import edu.isistan.seas.proxy.DataAssignment;
 import edu.isistan.seas.proxy.bufferedproxy.BufferedSchedulerProxy;
 import edu.isistan.simulator.Event;
@@ -67,9 +66,9 @@ public class SimpleGASchedulerProxy extends BufferedSchedulerProxy {
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public void processEvent(Event e) {
-		if (e.getEventType() == SimpleGASchedulerProxy.EVENT_GENETIC_ALGORITHM_ROUND_FINISHED) {
-			scheduleJobs((ArrayList<DataAssignment>) e.getData());
+	public void processEvent(Event event) {
+		if (event.getEventType() == SimpleGASchedulerProxy.EVENT_GENETIC_ALGORITHM_ROUND_FINISHED) {
+			scheduleJobs((ArrayList<DataAssignment>) event.getData());
 			if (currentRound < geneticRounds.size()) {// means that there are
 														// more assignments
 														// rounds to be
@@ -79,7 +78,7 @@ public class SimpleGASchedulerProxy extends BufferedSchedulerProxy {
 				runGeneticAlgorithm(currentGAR);
 			}
 		} else {
-			super.processEvent(e);
+			super.processEvent(event);
 		}
 	}
 
@@ -260,7 +259,7 @@ public class SimpleGASchedulerProxy extends BufferedSchedulerProxy {
 			currentGAR.setAssignmentFinishedTime(accRoundtime);
 			currentGAR.setAssignment(solution);
 			Event roundFinishedEvent = Event.createEvent(Event.NO_SOURCE, accRoundtime,
-					Simulation.getEntityId(this.getName()),
+					this.getId(),
 					SimpleGASchedulerProxy.EVENT_GENETIC_ALGORITHM_ROUND_FINISHED, solution);
 			Simulation.addEvent(roundFinishedEvent);
 			// Uncomment the next line for test purposes: print best individual,
@@ -313,16 +312,20 @@ public class SimpleGASchedulerProxy extends BufferedSchedulerProxy {
 		for (Iterator<DataAssignment> iterator = solution.iterator(); iterator.hasNext();) {
 			DataAssignment deviceAssignment = (DataAssignment) iterator.next();
 			Device current = deviceAssignment.getDevice();
-			InputTransferInfo prev = null;
+			TransferInfo prev = null;
 			for (Iterator<Job> iterator2 = deviceAssignment.getAssignedJobs().iterator(); iterator2.hasNext();) {
 				Job job = (Job) iterator2.next();
 				Logger.logEntity(this, "Job assigned to ", job.getJobId(), current);
-				current.incrementIncommingJobs();
+				current.incrementIncomingJobs();
+
+				queueJobTransferring(current, job);
+
+				/*
 				JobStatsUtils.setJobAssigned(job);
 				
 				long subMessagesCount = (long) Math.ceil(job.getInputSize() / (double) MESSAGE_SIZE);
 				long lastMessageSize = job.getInputSize() - (subMessagesCount - 1) * MESSAGE_SIZE;
-				InputTransferInfo transferInfo = new InputTransferInfo(current, job, subMessagesCount, 0,
+				TransferInfo transferInfo = new TransferInfo(current, job, subMessagesCount, 0,
 						lastMessageSize);
 				transfersPending.put(job.getJobId(), transferInfo);
 
@@ -330,9 +333,9 @@ public class SimpleGASchedulerProxy extends BufferedSchedulerProxy {
 					idSend++;
 					long messageSize = transferInfo.messagesCount == 1 ? transferInfo.lastMessageSize : MESSAGE_SIZE;
 					Logger.logEntity(this, "Initiating Job transferring to ", job.getJobId(), current);
-					/*
-					 * temporal cast (int)messageSize, message size must be long
-					 */
+
+					// temporal cast (int)messageSize, message size must be long
+
 					long time = NetworkModel.getModel().send(this, current, job.getJobId(), (int) messageSize, job);
 					long currentSimTime = Simulation.getTime();
 					JobStatsUtils.transfer(job, current, time - currentSimTime, currentSimTime);
@@ -340,6 +343,7 @@ public class SimpleGASchedulerProxy extends BufferedSchedulerProxy {
 				} else
 					prev.nextJobId = job.getJobId();
 				prev = transferInfo;
+				*/
 			}
 		}
 	}

@@ -77,10 +77,13 @@ public class BacktrackingBasedProxy extends BufferedSchedulerProxy {
 	private void sendJobsToDevice(Device device, Short[] jobIds) {		
 		for (int jobIndex = 0; jobIndex < jobIds.length; jobIndex++){
 			Job job = bufferedJobs.get(jobIndex);
+			queueJobTransferring(device, job);
+			/*
 			Logger.logEntity(this, "Job assigned to ", job.getJobId() ,device);
 			long time=NetworkModel.getModel().send(this, device, idSend++,  job.getInputSize(), job);
 			long currentSimTime = Simulation.getTime();
 			JobStatsUtils.transfer(job, device, time-currentSimTime,currentSimTime);
+			*/
 		}	
 		
 	}

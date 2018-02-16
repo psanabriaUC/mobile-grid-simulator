@@ -31,8 +31,8 @@ public class OverflowPenaltyDataEvaluator implements DataAssignmentEvaluatorIF {
 		for (int job_index = 0; job_index < da.getAssignedJobs().size(); job_index++) {
 			double jobInputData = da.getAssignedJobs().get(job_index).getInputSize();
 			double jobOutputData = da.getAssignedJobs().get(job_index).getOutputSize();
-			energyWastedWhileReceiving+= da.getDevice().getEnergyWasteInTransferingData(jobInputData);
-			energyWastedWhileSending+= da.getDevice().getEnergyWasteInTransferingData(jobOutputData);
+			energyWastedWhileReceiving+= da.getDevice().getEnergyWasteInTransferringData(jobInputData);
+			energyWastedWhileSending+= da.getDevice().getEnergyWasteInTransferringData(jobOutputData);
 			
 			if (energyWastedWhileReceiving + energyWastedWhileSending <= nodeMaxAvailableEnergy){
 				completelyTransferedJobs++;
@@ -49,7 +49,7 @@ public class OverflowPenaltyDataEvaluator implements DataAssignmentEvaluatorIF {
 					
 					while (overflow > 0 && lastAffordableJob >= 0){						
 						double lastAffordableOutput=da.getAssignedJobs().get(lastAffordableJob).getOutputSize();
-						overflow-=da.getDevice().getEnergyWasteInTransferingData(lastAffordableOutput);
+						overflow-=da.getDevice().getEnergyWasteInTransferringData(lastAffordableOutput);
 						totalDataTransfered-=((lastAffordableOutput + (double)da.getAssignedJobs().get(lastAffordableJob).getInputSize())/(double)(1024*1024));
 						lastAffordableJob--;
 					}

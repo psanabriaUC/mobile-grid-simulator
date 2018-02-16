@@ -8,8 +8,8 @@ import edu.isistan.mobileGrid.network.Node;
 
 public class AverageBroadCastLink extends BroadCastLink {
 	
-	protected double stdDelay=0;
-	protected double stdBandwidht=0;
+	protected double stdDelay = 0;
+	protected double stdBandwidht = 0;
 	protected Random delayRandom = new Random();
 	protected Random bandwidhtRandom = new Random();
 	
@@ -24,8 +24,9 @@ public class AverageBroadCastLink extends BroadCastLink {
 
 	@Override
 	public long getTransmissionTime(int size) {
-		if(this.bandwidth<=0)
+		if(this.bandwidth <= 0) {
 			throw new RuntimeException("Link speed is equal or lower than 0");
+		}
 		double diff;
 		//Evita que la velocidad de transferencia sea 0 o menor
 		do{

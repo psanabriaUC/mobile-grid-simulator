@@ -2,18 +2,13 @@ package edu.isistan.seas.node;
 
 import java.util.HashMap;
 
-import edu.isistan.mobileGrid.jobs.Job;
 import edu.isistan.mobileGrid.jobs.JobStatsUtils;
-import edu.isistan.mobileGrid.network.NetworkModel;
-import edu.isistan.mobileGrid.network.NetworkModel.Message;
+import edu.isistan.mobileGrid.network.Message;
 import edu.isistan.mobileGrid.network.Node;
-import edu.isistan.mobileGrid.network.UpdateMsg;
 import edu.isistan.mobileGrid.node.BatteryManager;
 import edu.isistan.mobileGrid.node.Device;
 import edu.isistan.mobileGrid.node.NetworkEnergyManager;
-import edu.isistan.mobileGrid.node.SchedulerProxy;
 import edu.isistan.simulator.Logger;
-import edu.isistan.simulator.Simulation;
 
 /**This class contains logic to reflect the energy consumption of a device caused by
  * its networking activity, i.e., caused by the sending and receiving of data through the network. The
@@ -82,26 +77,25 @@ public class DefaultNetworkEnergyManager implements NetworkEnergyManager {
 	}
 
 	@Override
-	public boolean onSendData(Message message) {
-		return registerEnergyWaste(message, TRANSFER_FROM_DEVICE);
-	}
-	
-	@Override
-	/**return true if data could be received by the node, false otherwise*/
-	public boolean onReceieveData(Message message) {
-		return registerEnergyWaste(message, TRANSFER_TO_DEVICE);		
+	public boolean onSendData(Node source, Node destination, long bytesSent) {
+		return registerEnergyWaste(source, destination, bytesSent, TRANSFER_FROM_DEVICE);
 	}
 
-	/**This method accounts the energy wasted of sending or receiving the message passed as arguments. If 
+	@Override
+	public boolean onReceiveData(Node source, Node destination, long bytesReceived) {
+		return registerEnergyWaste(source, destination, bytesReceived, TRANSFER_TO_DEVICE);
+	}
+
+	/**This method accounts the energy wasted of sending or receiving the message passed as arguments. If
 	 * transfer could be performed with the available energy then the invocation returns true, otherwise
 	 * returns false. If networkEnergyManagementEnable flag is false, then the invocation always returns true.
 	 * */
-	private boolean registerEnergyWaste(Message message, boolean transferingType) {
+	private boolean registerEnergyWaste(Node source, Node destination, long dataSizeInBytes, boolean transferingType) {
 		boolean completedTransfer = true;
 		
 		if (networkEnergyManagementEnable){
 			
-			double dataSizeInKb = (Double.parseDouble((String)message.getAttribute(Message.SIZE))) / (double)1024;
+			double dataSizeInKb = dataSizeInBytes / 1024.0;
 			double joulesPerKbSent = dataSizeInKb <= TEN_KILOBYTES ? wifiRSSI_joulesPerKb_10kb.get(wifiRSSI) : wifiRSSI_joulesPerKb_100kb.get(wifiRSSI);									
 			double joulesNeedForTransferData = dataSizeInKb * joulesPerKbSent;
 			
@@ -132,12 +126,11 @@ public class DefaultNetworkEnergyManager implements NetworkEnergyManager {
 			
 			batteryManager.onNetworkEnergyConsumption(batteryPercentageNeeded);
 			if (transferingType == TRANSFER_FROM_DEVICE)			
-				JobStatsUtils.registerSendingDataEnergy(message.getScr(),joulesNeedForTransferData,dataSizeInKb/(double)1024);			
+				JobStatsUtils.registerSendingDataEnergy(source, joulesNeedForTransferData,dataSizeInKb/(double)1024);
 			else
-				JobStatsUtils.registerReceivingDataEnergy(message.getDst(),joulesNeedForTransferData, dataSizeInKb/(double)1024);
+				JobStatsUtils.registerReceivingDataEnergy(destination, joulesNeedForTransferData, dataSizeInKb/(double)1024);
 			
 			accGlobalJoules+=joulesNeedForTransferData;
-			
 		}
 		return completedTransfer;
 	}

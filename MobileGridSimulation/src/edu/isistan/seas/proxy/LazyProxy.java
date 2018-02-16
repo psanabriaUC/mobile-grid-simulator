@@ -4,15 +4,21 @@ import java.util.ArrayList;
 
 import edu.isistan.mobileGrid.jobs.Job;
 import edu.isistan.mobileGrid.jobs.JobStatsUtils;
+import edu.isistan.mobileGrid.network.Message;
 import edu.isistan.mobileGrid.network.NetworkModel;
 import edu.isistan.mobileGrid.network.Node;
 import edu.isistan.mobileGrid.network.UpdateMsg;
 import edu.isistan.mobileGrid.node.Device;
 import edu.isistan.mobileGrid.node.SchedulerProxy;
+import edu.isistan.simulator.Entity;
 import edu.isistan.simulator.Event;
 import edu.isistan.simulator.Logger;
 import edu.isistan.simulator.Simulation;
 
+/**
+ * Scheduler that assigns a single {@link Job} to every {@link Entity} in the grid, then waits until a device finishes
+ * executing his job before re-assigning it a new one.
+ */
 public class LazyProxy extends SchedulerProxy {
 	
 	private static final int FIRST = 0;	
@@ -20,7 +26,6 @@ public class LazyProxy extends SchedulerProxy {
 	protected ArrayList<Job> inQueueJobs = null;
 	protected ArrayList<Device> iddleDevices = null;
 	protected ArrayList<Long> startIddleTimes = null;
-	protected int idSend = 0;
 	
 	public LazyProxy(String name) {		
 		super(name);		
@@ -42,39 +47,40 @@ public class LazyProxy extends SchedulerProxy {
 	}
 
 	@Override
-	public void receive(Node scr, int id, Object data) {
-		if (data instanceof Job){
-			Job jobResult = (Job) data;
-			JobStatsUtils.successTrasferBack(jobResult);
-			if (!inQueueJobs.isEmpty()){
-				Job j = inQueueJobs.remove(FIRST);
-				Logger.logEntity(this, "Job assigned to ", j.getJobId() ,scr);
-				long time=NetworkModel.getModel().send(this, scr, idSend++,  j.getInputSize(), j);
+	public void onMessageReceived(Message message) {
+		if (message.getData() instanceof Job){
+			Job jobResult = (Job) message.getData();
+			JobStatsUtils.successTransferBack(jobResult);
+			if (!inQueueJobs.isEmpty()) {
+				Job job = inQueueJobs.remove(FIRST);
+				queueJobTransferring((Device) message.getSource(), job);
+				/*
+				Logger.logEntity(this, "Job assigned to ", job.getJobId() ,scr);
+				long time=NetworkModel.getModel().send(this, scr, idSend++,  job.getInputSize(), job);
 				long currentSimTime = Simulation.getTime();
-				JobStatsUtils.transfer(j, scr, time-currentSimTime,currentSimTime);
-			}
-			else{
-				iddleDevices.add((Device)scr);
+				JobStatsUtils.transfer(job, scr, time-currentSimTime,currentSimTime);
+				*/
+			} else {
+				iddleDevices.add((Device)message.getSource());
 				startIddleTimes.add(Simulation.getTime());
 			}
-		}else
-			if(data instanceof UpdateMsg){
-				UpdateMsg msg = (UpdateMsg) data;
-				Device device = devices.get(msg.getNodeId());
-				device.setLastBatteryLevelUpdate(msg.getPercentageOfRemainingBattery());				
-				JobStatsUtils.registerUpdateMessage(scr,(UpdateMsg)data);
-			}
+		} else if(message.getData() instanceof UpdateMsg) {
+			UpdateMsg updateMessage = (UpdateMsg) message.getData();
+			Device device = devices.get(updateMessage.getNodeId());
+			device.setLastBatteryLevelUpdate(updateMessage.getPercentageOfRemainingBattery());
+			JobStatsUtils.registerUpdateMessage(message.getSource(), updateMessage);
+		}
 
 	}
 
 	@Override
-	public void success(int id) {
+	public void onMessageSentAck(Message message) {
 		// TODO Auto-generated method stub
 
 	}
 
 	@Override
-	public void fail(int id) {
+	public void fail(Message message) {
 		// TODO Auto-generated method stub
 
 	}
@@ -103,24 +109,20 @@ public class LazyProxy extends SchedulerProxy {
 	}
 
 	@Override
-	public void processEvent(Event e) {
-		if(EVENT_JOB_ARRIVE!=e.getEventType()) throw new IllegalArgumentException("Unexpected event");
-		Job j=(Job)e.getData();
-		JobStatsUtils.addJob(j, this);		
-		Logger.logEntity(this, "Job arrived ", j.getJobId());
-		inQueueJobs.add(j);		
+	public void processEvent(Event event) {
+		if(EVENT_JOB_ARRIVE != event.getEventType()) throw new IllegalArgumentException("Unexpected event");
+		Job job = (Job) event.getData();
+		JobStatsUtils.addJob(job, this);
+		Logger.logEntity(this, "Job arrived ", job.getJobId());
+		inQueueJobs.add(job);
 		assignJob();		
 	}
 	
 	private void assignJob() {
-		if (!iddleDevices.isEmpty() && !inQueueJobs.isEmpty()){
+		if (!iddleDevices.isEmpty() && !inQueueJobs.isEmpty()) {
 			Device device = iddleDevices.remove(FIRST);
-			Job j = inQueueJobs.remove(FIRST);
-			Logger.logEntity(this, "Job assigned to ", j.getJobId() ,device);
-			long time=NetworkModel.getModel().send(this, device, idSend++,  j.getInputSize(), j);
-			long currentSimTime = Simulation.getTime();
-			JobStatsUtils.incIddleTime(currentSimTime-startIddleTimes.remove(FIRST));
-			JobStatsUtils.transfer(j, device, time-currentSimTime,currentSimTime);
+			Job job = inQueueJobs.remove(FIRST);
+			queueJobTransferring(device, job);
 		}		
 	}
 
@@ -134,13 +136,11 @@ public class LazyProxy extends SchedulerProxy {
 		}
 	}
 
-
 	@Override
 	public void addDevice(Device device) {
 		this.devices.put(device.getName(),device);
 		iddleDevices.add(device);
 		startIddleTimes.add(Simulation.getTime());
-		
 	}
 
 }
