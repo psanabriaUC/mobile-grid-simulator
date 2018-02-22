@@ -58,7 +58,7 @@ public class DeviceLoader extends Thread {
 	private ReentrantLock simLock;
 
     /**
-     * Current battery state of charge as a value between 0 and 1.000.000, where 1.000.000 corresponds to 100%.
+     * Current battery state of charge as a value between 0 and 10.000.000, where 10.000.000 corresponds to 100%.
      */
 	private int startCharge;
 
@@ -271,7 +271,7 @@ public class DeviceLoader extends Thread {
      * @return The list of battery profiling samples contained in the file.
      */
 	private List<ProfileData> readBattery(String batteryTraceFile) {
-		List<ProfileData> profileData = new ArrayList<ProfileData>();
+		List<ProfileData> profileData = new ArrayList<>();
         BufferedReader reader = null;
         try {
             reader = new BufferedReader(new FileReader(new File(batteryTraceFile)));

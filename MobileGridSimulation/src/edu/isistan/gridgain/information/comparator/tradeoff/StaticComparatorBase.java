@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.Properties;
 
 import edu.isistan.mobileGrid.node.Device;
+import edu.isistan.mobileGrid.node.SchedulerProxy;
 import edu.isistan.seas.proxy.DeviceComparator;
 
 public class StaticComparatorBase extends DeviceComparator {
@@ -25,7 +26,7 @@ public class StaticComparatorBase extends DeviceComparator {
 	}
 	@Override
 	public double getValue(Device device) {
-		double nJobs = device.getJobsScheduledByProxy() + device.getNumberOfJobs() + 1;
-		return ((double)device.getLastBatteryLevelUpdate()) / properties.get(device.getMIPS()) / nJobs;
+		double nJobs = SchedulerProxy.PROXY.getIncomingJobs(device) + device.getNumberOfJobs() + 1;
+		return ((double)SchedulerProxy.PROXY.getLastReportedSOC(device)) / properties.get(device.getMIPS()) / nJobs;
 	}
 }

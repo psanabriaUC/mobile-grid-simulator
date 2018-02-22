@@ -49,20 +49,19 @@ public abstract class DataIntensiveScheduler extends SchedulerProxy {
 	protected abstract void assignJob(Job job);
 	
 	protected void initializeDeviceAssignments() {
-		for (Iterator<Device> iterator = devices.values().iterator();iterator.hasNext();) {
-			Device d = (Device)iterator.next();
-			DataAssignment tdd = new DataAssignment(d);
-			totalDataPerDevice.add(tdd);
-			deviceToAssignmentsMap.put(d, tdd);			
+		for (Device device : devices.values()) {
+			DataAssignment dataAssignment = new DataAssignment(device);
+			totalDataPerDevice.add(dataAssignment);
+			deviceToAssignmentsMap.put(device, dataAssignment);
 		}
 		this.device_assignments_initialized = true;		
 	}
 	
 	@Override
 	public void remove(Device device) {
-		DataAssignment d = deviceToAssignmentsMap.get(device);
-		if (totalDataPerDevice.indexOf(d) != -1)
-			totalDataPerDevice.get(totalDataPerDevice.indexOf(d));
+		DataAssignment dataAssignment = deviceToAssignmentsMap.get(device);
+		if (totalDataPerDevice.indexOf(dataAssignment) != -1)
+			totalDataPerDevice.get(totalDataPerDevice.indexOf(dataAssignment));
 		deviceToAssignmentsMap.remove(device);
 		super.remove(device);
 	}
@@ -73,8 +72,10 @@ public abstract class DataIntensiveScheduler extends SchedulerProxy {
 			Job jobResult = (Job) message.getData();
 			DataAssignment assignment = jobAssignments.get(jobResult);
 			if(assignment != null){
-				assignment.setMbToBeReceived(assignment.getMbToBeReceived()-((double)((double)jobResult.getInputSize() / (double)(1024*1024))));
-				assignment.setMbToBeSend(assignment.getMbToBeSend()- ((double)((double)jobResult.getOutputSize() / (double)(1024*1024))));
+				assignment.setMbToBeReceived(assignment.getMbToBeReceived() - (double)jobResult.getInputSize() /
+						(double)(1024 * 1024));
+				assignment.setMbToBeSend(assignment.getMbToBeSend() - (double)jobResult.getOutputSize() /
+                        (double)(1024 * 1024));
 			}
 		}
 		super.onMessageReceived(message);

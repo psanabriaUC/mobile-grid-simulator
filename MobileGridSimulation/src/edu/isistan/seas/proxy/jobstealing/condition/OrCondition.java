@@ -7,8 +7,8 @@ public class OrCondition extends CombinedCondition {
 
 	@Override
 	public boolean canSteal(Device stealer, Device victim, StealerProxy proxy) {
-		for(StealingCondition c:this.conditions)
-			if(c.canSteal(stealer, victim, proxy)) return true;
+		for(StealingCondition condition : this.conditions)
+			if(condition.canSteal(stealer, victim, proxy)) return true;
 		return false;
 	}
 

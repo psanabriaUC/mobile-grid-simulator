@@ -4,10 +4,7 @@ import java.util.*;
 
 import edu.isistan.mobileGrid.jobs.Job;
 import edu.isistan.mobileGrid.jobs.JobStatsUtils;
-import edu.isistan.mobileGrid.network.Message;
-import edu.isistan.mobileGrid.network.NetworkModel;
-import edu.isistan.mobileGrid.network.Node;
-import edu.isistan.mobileGrid.network.UpdateMsg;
+import edu.isistan.mobileGrid.network.*;
 import edu.isistan.simulator.Entity;
 import edu.isistan.simulator.Event;
 import edu.isistan.simulator.Logger;
@@ -19,7 +16,6 @@ import edu.isistan.simulator.Simulation;
  * <br/>
  * When sending messages, the following methods are invoked in order:
  * <ul>
- *     <li>Receiver's {@link Device#incrementIncomingJobs()}</li>
  *     <li>Sender's {@link Device#startTransfer(Node, int, Object)}</li>
  *     <li>Receiver's {@link Device#incomingData(Node, int)}</li>
  *     <li>Receiver's {@link Device#onMessageReceived(Message)}</li>
@@ -30,8 +26,8 @@ import edu.isistan.simulator.Simulation;
  */
 public class Device extends Entity implements Node, DeviceListener {
 
-	public static final int EVENT_TYPE_BATTERY_UPDATE = 0;
-	public static final int EVENT_TYPE_CPU_UPDATE = 1;
+    public static final int EVENT_TYPE_BATTERY_UPDATE = 0;
+    public static final int EVENT_TYPE_CPU_UPDATE = 1;
 	public static final int EVENT_TYPE_FINISH_JOB = 2;
 	public static final int EVENT_TYPE_DEVICE_START = 3;
 	public static final int EVENT_TYPE_STATUS_NOTIFICATION = 4;
@@ -64,7 +60,7 @@ public class Device extends Entity implements Node, DeviceListener {
     /**
      * Flag to indicate this device is currently receiving data from the network.
      */
-	protected boolean isReceiving = false;
+    protected boolean isReceiving = false;
 
     /**
      * Flag to indicate this device is currently sending data through the network.
@@ -77,22 +73,20 @@ public class Device extends Entity implements Node, DeviceListener {
      */
 	protected Map<Integer, JobTransfer> incomingJobTransfers = new HashMap<>();
 
+    /**
+     * Helper for handling all logic related to battery depletion.
+     */
 	protected BatteryManager batteryManager;
+
+    /**
+     * Helper for handling job execution simulation based on available CPU.
+     */
 	protected ExecutionManager executionManager;
+
+    /**
+     * Helper for handling battery depletion to network-related activity.
+     */
 	protected NetworkEnergyManager networkEnergyManager;
-
-	// TODO: move these two variables to the proxy side.
-
-    /**
-     * Counter for scheduled jobs to be transferred by the proxy. This value may differ from {@link Device#incomingJobTransfers}'size
-     * as it is updated immediately once the job has been scheduled to be sent by the proxy.
-     */
-    protected int jobsScheduledByProxy = 0;
-
-    /**
-     * Last known battery level of this device by the proxy. This is not the device's real SOC.
-     */
-	protected int lastBatteryLevelUpdate;
 
     /**
      * Message handler for processing messages containing {@link Job} payloads.
@@ -187,7 +181,6 @@ public class Device extends Entity implements Node, DeviceListener {
                         " but got " + messageSent.getOffset());
             }
 
-            long index = transferInfo.getCurrentIndex() + 1;
             int messageSize = (int) NetworkModel.getModel().getAckMessageSizeInBytes();
 
             if (networkEnergyManager.onReceiveData(messageSent.getDestination(), this, messageSize)) {// if the ack could be processed then the node update
@@ -258,7 +251,7 @@ public class Device extends Entity implements Node, DeviceListener {
 			this.batteryManager.onBatteryEvent(newBatteryLevel);
 
 			if (STATUS_NOTIFICATION_TIME_FREQ == 0
-					&& lastBatteryLevelUpdate - newBatteryLevel >= BatteryManager.PROFILE_ONE_PERCENT_REPRESENTATION
+					&& SchedulerProxy.PROXY.getLastReportedSOC(this) - newBatteryLevel >= BatteryManager.PROFILE_ONE_PERCENT_REPRESENTATION
 					&& newBatteryLevel > 0) {
 				UpdateMsg updateMsg = new UpdateMsg(this.getName(), newBatteryLevel, Simulation.getTime());
 				queueMessageTransfer(SchedulerProxy.PROXY, updateMsg, UpdateMsg.STATUS_MSG_SIZE_IN_BYTES);
@@ -328,7 +321,7 @@ public class Device extends Entity implements Node, DeviceListener {
         SchedulerProxy.PROXY.addDevice(this);
         this.batteryManager.startWorking();
         JobStatsUtils.deviceJoinTopology(this, this.batteryManager.getStartTime());
-        this.lastBatteryLevelUpdate = getBatteryLevel();
+        SchedulerProxy.PROXY.updateDeviceSOC(this, getBatteryLevel());
         if (Device.STATUS_NOTIFICATION_TIME_FREQ > 0) {
             long nextNotificationTime = Simulation.getTime() + Device.STATUS_NOTIFICATION_TIME_FREQ;
             this.nextStatusNotificationEvent=Event.createEvent(Event.NO_SOURCE, nextNotificationTime, this.getId(),
@@ -378,7 +371,6 @@ public class Device extends Entity implements Node, DeviceListener {
      * @param job The job to process.
      */
     private void addJob(Job job) {
-        jobsScheduledByProxy--;
         this.executionManager.addJob(job);
     }
 
@@ -428,6 +420,7 @@ public class Device extends Entity implements Node, DeviceListener {
         return networkEnergyManager.getAccEnergyInTransfering();
     }
 
+    /*
     public void incrementIncomingJobs() {
         jobsScheduledByProxy++;
     }
@@ -435,6 +428,7 @@ public class Device extends Entity implements Node, DeviceListener {
     public int getJobsScheduledByProxy() {
         return jobsScheduledByProxy;
     }
+    */
 
 	/**
 	 * Returns all the jobs assigned to the device.
@@ -474,23 +468,6 @@ public class Device extends Entity implements Node, DeviceListener {
 		return this.batteryManager.getBatteryCapacityInJoules();
 	}
 
-	public int getLastBatteryLevelUpdate() {
-		return lastBatteryLevelUpdate;
-	}
-
-	public void setLastBatteryLevelUpdate(int lastBatteryLevelUpdate) {
-		this.lastBatteryLevelUpdate = lastBatteryLevelUpdate;
-	}
-
-	/**
-	 * returns the available Joules of the device based on the value of the last
-	 * reported SOC
-	 */
-	public double getJoulesBasedOnLastReportedSOC() {
-		return ((double) ((this.getLastBatteryLevelUpdate() / BatteryManager.PROFILE_ONE_PERCENT_REPRESENTATION)
-				* this.getTotalBatteryCapacityInJoules())) / (double) (100);
-	}
-
 	/**
 	 * This method returns the last Wifi Received Signal Strength reported by
 	 * the device
@@ -523,12 +500,21 @@ public class Device extends Entity implements Node, DeviceListener {
 		return (networkEnergyManager.getAccEnergyInTransfering() * 100) / initialJoules;
 	}
 
-	/** Returns the state of charge of the device when it joint the grid */
+    /**
+     * Returns the state of charge of the device when it joined the grid as a value between 0 and 10.000.000,
+     * where the latter means 100%.
+     *
+     * @return The initial state of charge of the device.
+     */
 	public int getInitialSOC() {
 		return batteryManager.getInitialSOC();
 	}
 
-	/** Returns the Joules of the device when it joint the grid */
+    /**
+     * Returns the Joules of the device when it joined the grid.
+     *
+     * @return The initial amount of energy in the device's battery, in Joules.
+     */
 	public double getInitialJoules() {
 		return getInitialSOC() * getTotalBatteryCapacityInJoules()
 				/ ((double) 100 * (double) BatteryManager.PROFILE_ONE_PERCENT_REPRESENTATION);
@@ -561,72 +547,6 @@ public class Device extends Entity implements Node, DeviceListener {
     }
 
     /**
-     * Base utility class for handling messages at different stages of their life cycle.
-     *
-     * @param <T> The type of the message's payload to process.
-     */
-    protected class MessageHandler<T> {
-        /**
-         * Called when a message is received. No guarantee is made that the payload is complete.
-         *
-         * @param message The message received.
-         */
-	    public void onMessageReceived(Message<T> message) {}
-
-        /**
-         * Called after {@link MessageHandler#onMessageReceived(Message)} only if the entire payload of the message
-         * has been confirmed to have been received.
-         *
-         * @param message The message received.
-         */
-	    public void onMessageFullyReceived(Message<T> message) {}
-
-        /**
-         * Called right before sending a message.
-         *
-         * @param transferInfo The information of the message's transfer state.
-         */
-	    public void onWillSendMessage(TransferInfo<T> transferInfo) {}
-
-        /**
-         * Called when receiving confirmation that a delivered message has been successfully received by the intended
-         * receiver.
-         *
-         * @param transferInfo The information of the message's transfer state.
-         */
-	    public void onMessageSentAck(TransferInfo<T> transferInfo) {}
-
-        /**
-         * Called after {@link MessageHandler#onMessageSentAck(TransferInfo)} only if the entire payload of the message
-         * has been confirmed to have been received.
-         *
-         * @param transferInfo The information of the message's transfer state.
-         */
-	    public void onMessageFullySent(TransferInfo<T> transferInfo) {};
-
-        /**
-         * Called when a message sent by someone else failed to arrive to this {@link Device}.
-         *
-         * @param message The message sent.
-         */
-	    public void onCouldNotReceiveMessage(Message<T> message) {}
-
-        /**
-         * Called when this {@link Device} does not have enough power to send a message.
-         *
-         * @param transferInfo The information of the message's transfer state.
-         */
-	    public void onCouldNotSendMessage(TransferInfo<T> transferInfo) {};
-
-        /**
-         * Called when a message sent by this {@link Device} could not be received by its intended recipient.
-         *
-         * @param message The message sent.
-         */
-	    public void onMessageSentFailedToArrive(Message<T> message) {};
-    }
-
-    /**
      * Handler of messages containing {@link Job}s.
      */
     private class JobMessageHandler extends MessageHandler<Job> {
@@ -634,6 +554,14 @@ public class Device extends Entity implements Node, DeviceListener {
         @Override
         public void onMessageFullyReceived(Message<Job> message) {
             addJob(message.getData());
+        }
+
+        @Override
+        public void onWillSendMessage(TransferInfo<Job> transferInfo) {
+            if (transferInfo.getCurrentIndex() == 0) {
+                JobStatsUtils.transferResults(transferInfo.getData(), transferInfo.getDestination(), Simulation.getTime());
+                // JobStatsUtils.transferBackInitiated(job);
+            }
         }
 
         @Override
@@ -651,15 +579,6 @@ public class Device extends Entity implements Node, DeviceListener {
             Device.this.incomingJobTransfers.remove(job.getJobId());
 
             finishedJobTransfersCompleted.add(transferInfo);
-        }
-
-
-        @Override
-        public void onWillSendMessage(TransferInfo<Job> transferInfo) {
-            if (transferInfo.getCurrentIndex() == 0) {
-                JobStatsUtils.transferResults(transferInfo.getData(), transferInfo.getDestination(), Simulation.getTime());
-                // JobStatsUtils.transferBackInitiated(job);
-            }
         }
 
         @Override

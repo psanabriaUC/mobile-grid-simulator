@@ -13,28 +13,35 @@ import edu.isistan.simulator.Event;
 import edu.isistan.simulator.Logger;
 import edu.isistan.simulator.Simulation;
 
+/**
+ * Base class for the implementation of a centralized proxy that assigns jobs to arbitrary amounts for nodes
+ * in a grid.
+ */
 public abstract class SchedulerProxy extends Entity  implements Node, DeviceListener {
 	
 	/* Size of message buffer for transfers in bytes */
-	private static final int MESSAGE_SIZE = 1 * 1024 * 1024;// 1mb
+	private static final int MESSAGE_SIZE = 1024 * 1024;// 1mb
 
     /**
-     * Hash map of message transfer queues for each device in the network. Maps the ID of the device
-     * to its respective transfer queue.
+     * Information currently known by the proxy about its different nodes. Maps the Node to the object containing
+     * its data.
      */
-	private HashMap<Integer, Queue<TransferInfo>> pendingTransfers = new HashMap<>();
-
-    /**
-     * Hash map of all messages that have been sent through a given channel with one device. Maps the ID of the
-     * device with its respective transfer queue. Used for logging purposes.
-     */
-    private HashMap<Integer, Queue<TransferInfo>> completedTransfers = new HashMap<>();
+    private WeakHashMap<Node, DeviceData> deviceDataMap = new WeakHashMap<>();
 
 	public static final int EVENT_JOB_ARRIVE = 1;
 
+    /**
+     * Processes an event dispatched by the {@link Simulation}.
+     *
+     * @param event The event that will be processed.
+     */
 	public abstract void processEvent(Event event);
 
+    /**
+     * A static reference to the proxy so it can be accessed from anywhere.
+     */
 	public static SchedulerProxy PROXY;
+
 	protected HashMap<String, Device> devices = new HashMap<String,Device>();
 
 	public SchedulerProxy(String name) {
@@ -54,7 +61,7 @@ public abstract class SchedulerProxy extends Entity  implements Node, DeviceList
 	public double getCurrentAggregatedNodesEnergy(){
 		double currentAggregatedEnergy = 0;
         for (Device dev : devices.values()) {
-            currentAggregatedEnergy += dev.getJoulesBasedOnLastReportedSOC();
+            currentAggregatedEnergy += getJoulesBasedOnLastReportedSOC(dev); //dev.getJoulesBasedOnLastReportedSOC();
         }
 		return currentAggregatedEnergy;
 	}
@@ -86,7 +93,8 @@ public abstract class SchedulerProxy extends Entity  implements Node, DeviceList
             Device device = devices.get(msg.getNodeId());
             Logger.logEntity(this, "Battery update received from device " + msg.getNodeId() +
                     " value=" + msg.getPercentageOfRemainingBattery());
-            device.setLastBatteryLevelUpdate(msg.getPercentageOfRemainingBattery());
+            updateDeviceSOC(device, msg.getPercentageOfRemainingBattery());
+            // device.setLastBatteryLevelUpdate(msg.getPercentageOfRemainingBattery());
             JobStatsUtils.registerUpdateMessage(this, (UpdateMsg) data);
 		}
 
@@ -94,8 +102,9 @@ public abstract class SchedulerProxy extends Entity  implements Node, DeviceList
         // When we receive a message from a device, we check if we have any data to send to the device we got the
         // message from and start sending it to it.
         Device device = (Device) message.getSource();
-        if (!pendingTransfers.get(device.getId()).isEmpty()) {
-            TransferInfo transferInfo = pendingTransfers.get(device.getId()).peek();
+
+        if (!deviceDataMap.get(device).pendingTransfers.isEmpty()) {
+            TransferInfo transferInfo = deviceDataMap.get(device).pendingTransfers.peek();
             int messageSize = transferInfo.getMessageSize(MESSAGE_SIZE);
 
             if (transferInfo.getCurrentIndex() == 0) {
@@ -107,6 +116,25 @@ public abstract class SchedulerProxy extends Entity  implements Node, DeviceList
         }
 
 	}
+
+    public void updateDeviceSOC(Device device, int remainingBatteryPercentage) {
+        this.deviceDataMap.get(device).lastReportedStateOfCharge = remainingBatteryPercentage;
+    }
+
+    /**
+     * returns the available Joules of the device based on the value of the last
+     * reported SOC
+     */
+    public double getJoulesBasedOnLastReportedSOC(Device device) {
+        int lastBatterySOC = this.deviceDataMap.get(device).lastReportedStateOfCharge;
+
+        return ((double) ((lastBatterySOC / BatteryManager.PROFILE_ONE_PERCENT_REPRESENTATION)
+                * device.getTotalBatteryCapacityInJoules())) / (double) (100);
+    }
+
+    public int getLastReportedSOC(Device device) {
+        return this.deviceDataMap.get(device).lastReportedStateOfCharge;
+    }
 
     private void setJobTotalTransferringTime(TransferInfo transferInfo) {
         // FIXME: this code should be changed/fixed when variable cost of transferring for a node be implemented
@@ -133,19 +161,20 @@ public abstract class SchedulerProxy extends Entity  implements Node, DeviceList
 	    // This is the id of the node that received the message.
 	    int destinationNodeId = messageSent.getDestination().getId();
 
-	    Queue<TransferInfo> queue = pendingTransfers.get(destinationNodeId);
-	    TransferInfo transferInfo = queue.peek();
+	    DeviceData deviceData = this.deviceDataMap.get(messageSent.getDestination());
+	    TransferInfo transferInfo = deviceData.pendingTransfers.peek();
 	    // Should never be null, but we check just in case.
 	    if (transferInfo != null) {
 	        // If this is the last fragment of the message we are currently transmitting, we remove the current
             // transfer info from the queue.
 	        if (transferInfo.isLastMessage()) {
 
-                pendingTransfers.get(destinationNodeId).remove();
-                completedTransfers.get(destinationNodeId).add(transferInfo);
+                deviceData.pendingTransfers.remove();
+                deviceData.completedTransfers.add(transferInfo);
 
                 if (transferInfo.getData() instanceof Job) {
                     Job job = (Job) transferInfo.getData();
+                    deviceData.incomingJobs--;
 
                     Logger.logEntity(this, "Job transfer finished ", job.getJobId(), transferInfo.getDestination());
                     JobStatsUtils.setJobTransferCompleted(job, transferInfo.getDestination());
@@ -156,8 +185,8 @@ public abstract class SchedulerProxy extends Entity  implements Node, DeviceList
 
             // If we have more data to send to the device (either additional fragments of the previous message or the
             // first fragment of a new message), and the receiver device is currently not busy, we send the data.
-            if (!pendingTransfers.get(destinationNodeId).isEmpty() && !transferInfo.getDestination().isSending()) {
-                TransferInfo nextTransfer = pendingTransfers.get(destinationNodeId).peek();
+            if (!deviceData.pendingTransfers.isEmpty() && !transferInfo.getDestination().isSending()) {
+                TransferInfo nextTransfer = deviceData.pendingTransfers.peek();
                 int messageSize = nextTransfer.getMessageSize(MESSAGE_SIZE);
 
                 if (nextTransfer != transferInfo) {
@@ -193,14 +222,12 @@ public abstract class SchedulerProxy extends Entity  implements Node, DeviceList
 
 	public void addDevice(Device device) {
 	    this.devices.put(device.getName(), device);
-	    this.pendingTransfers.put(device.getId(), new LinkedList<TransferInfo>());
-	    this.completedTransfers.put(device.getId(), new LinkedList<TransferInfo>());
+	    this.deviceDataMap.put(device, new DeviceData(device.getInitialSOC()));
 	}
 
 	@Override
 	public void onDeviceFail(Node e) {
 		// TODO Auto-generated method stub
-		
 	}
 
     /**
@@ -212,7 +239,9 @@ public abstract class SchedulerProxy extends Entity  implements Node, DeviceList
      */
 	protected void queueJobTransferring(final Device device, final Job job){
         Logger.logEntity(this, "Job assigned to ", job.getJobId(), device);
-        device.incrementIncomingJobs();
+        // device.incrementIncomingJobs();
+
+        incrementIncomingJobs(device);
         JobStatsUtils.setJobAssigned(job);
 
         queueMessageTransfer(device, job, job.getInputSize(), new OnMessageSent() {
@@ -231,7 +260,7 @@ public abstract class SchedulerProxy extends Entity  implements Node, DeviceList
      * @param data The data to send.
      * @param messageSize The size of the data in bytes.
      */
-    protected void queueMessageTransfer(Node destination, Object data, long messageSize) {
+    protected <T> void queueMessageTransfer(Node destination, T data, long messageSize) {
 	    queueMessageTransfer(destination, data, messageSize, null);
     }
 
@@ -245,20 +274,23 @@ public abstract class SchedulerProxy extends Entity  implements Node, DeviceList
      * @param messageSize The size of the data in bytes.
      * @param delegate A delegate to invoke in case the message is sent immediately.
      */
-	protected void queueMessageTransfer(Node destination, Object data, long messageSize, OnMessageSent delegate) {
+	protected <T> void queueMessageTransfer(Node destination, T data, long messageSize, OnMessageSent delegate) {
+	    DeviceData deviceData = deviceDataMap.get(destination);
+
         // If the pending transfers queue for the given device is not empty, we say the transfer channel is busy.
-        boolean channelBusy = !pendingTransfers.get(destination.getId()).isEmpty();
+        boolean channelBusy = !deviceData.pendingTransfers.isEmpty();
+
 
         long subMessagesCount = (long) Math.ceil(messageSize / (double) MESSAGE_SIZE);
         int lastMessageSize = (int) (messageSize - (subMessagesCount - 1) * MESSAGE_SIZE);
 
-        TransferInfo transferInfo = new TransferInfo(destination, data, subMessagesCount, lastMessageSize);
-        pendingTransfers.get(destination.getId()).add(transferInfo);
+        TransferInfo transferInfo = new TransferInfo<>(destination, data, subMessagesCount, lastMessageSize);
+        deviceData.pendingTransfers.add(transferInfo);
 
         // If the channel is not busy, we send the first message for the given job.
         if (!channelBusy) {
 
-            TransferInfo nextTransferInfo = pendingTransfers.get(destination.getId()).peek();
+            TransferInfo nextTransferInfo = deviceData.pendingTransfers.peek();
             int packageSize = nextTransferInfo.getMessageSize(MESSAGE_SIZE);
 
             long time = sendMessage(nextTransferInfo.getDestination(), data, packageSize,
@@ -268,6 +300,10 @@ public abstract class SchedulerProxy extends Entity  implements Node, DeviceList
                 delegate.onMessageSent(nextTransferInfo.getDestination(), time);
             }
         }
+    }
+
+    protected void incrementIncomingJobs(Node node) {
+	    this.deviceDataMap.get(node).incomingJobs++;
     }
 
 	// Getters
@@ -289,8 +325,8 @@ public abstract class SchedulerProxy extends Entity  implements Node, DeviceList
 
     public List<TransferInfo> getTransfersPending() {
 	    List<TransferInfo> transfers = new ArrayList<>();
-	    for (Queue<TransferInfo> queue : this.pendingTransfers.values()) {
-            transfers.addAll(queue);
+	    for (DeviceData deviceData : this.deviceDataMap.values()) {
+	        transfers.addAll(deviceData.pendingTransfers);
         }
 
         return transfers;
@@ -298,15 +334,59 @@ public abstract class SchedulerProxy extends Entity  implements Node, DeviceList
 
     public List<TransferInfo> getTransfersCompleted() {
         List<TransferInfo> transfers = new ArrayList<>();
-        for (Queue<TransferInfo> queue : this.completedTransfers.values()) {
-            transfers.addAll(queue);
+        for (DeviceData deviceData : this.deviceDataMap.values()) {
+            transfers.addAll(deviceData.completedTransfers);
         }
 
         return transfers;
     }
 
+    /**
+     * Gets the number of queued jobs that are in a state of being transferred towards a given device (but haven't
+     * been fully sent yet).
+     *
+     * @param node A node in the grid.
+     * @return The amount of jobs queued for transfer against the given node.
+     */
+    public int getIncomingJobs(Node node) {
+        return this.deviceDataMap.get(node).incomingJobs;
+    }
+
     private interface OnMessageSent {
 	    void onMessageSent(Node destination, long ETA);
+    }
+
+    /**
+     * Known information of the proxy for a given {@link Device}.
+     */
+    private class DeviceData {
+        /**
+         * This amount of jobs currently enqueued to be transferred to a {@link Device}.
+         */
+        private int incomingJobs;
+
+        /**
+         * The last reported state of charge of a {@link Device} through an {@link UpdateMsg} event. Actual state of
+         * charges should actually be slightly lower than what the proxy knows at any given time.
+         */
+        private int lastReportedStateOfCharge;
+
+        /**
+         * Hash map of message transfer queues for each device in the network. Maps the ID of the device
+         * to its respective transfer queue.
+         */
+        private Queue<TransferInfo> pendingTransfers = new LinkedList<>();
+
+        /**
+         * Hash map of all messages that have been sent through a given channel with one device. Maps the ID of the
+         * device with its respective transfer queue. Used for logging purposes.
+         */
+        private Queue<TransferInfo> completedTransfers = new LinkedList<>();
+
+        DeviceData(int lastReportedStateOfCharge) {
+            incomingJobs = 0;
+            this.lastReportedStateOfCharge = lastReportedStateOfCharge;
+        }
     }
 
 }

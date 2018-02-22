@@ -10,10 +10,11 @@ import edu.isistan.mobileGrid.node.Device;
 public interface StealingPolicy {
 
 	/**
-	 * returns how many jobs should be stolen
-	 * @param stealer
-	 * @param victim
-	 * @return
+	 * Returns how many jobs should be stolen
+	 *
+	 * @param stealer The node stealing jobs.
+	 * @param victim The node to steal jobs from.
+	 * @return Number of stolen jobs.
 	 */
-	public int jobsToSteal(Device stealer,Device victim);
+	int jobsToSteal(Device stealer, Device victim);
 }

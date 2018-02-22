@@ -2,14 +2,11 @@ package edu.isistan.seas.proxy;
 
 import edu.isistan.mobileGrid.jobs.Job;
 import edu.isistan.mobileGrid.jobs.JobStatsUtils;
-import edu.isistan.mobileGrid.network.NetworkModel;
 import edu.isistan.mobileGrid.node.Device;
 import edu.isistan.mobileGrid.node.SchedulerProxy;
 import edu.isistan.simulator.Event;
 import edu.isistan.simulator.Logger;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Random;
 
 public class RandomProxy extends SchedulerProxy {

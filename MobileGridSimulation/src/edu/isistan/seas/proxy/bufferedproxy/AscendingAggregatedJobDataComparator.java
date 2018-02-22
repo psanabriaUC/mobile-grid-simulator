@@ -7,14 +7,11 @@ import edu.isistan.mobileGrid.jobs.Job;
 public class AscendingAggregatedJobDataComparator implements Comparator<Job> {
 
 	@Override
-	public int compare(Job arg0, Job arg1) {
-		long arg0value=arg0.getInputSize()+arg0.getOutputSize();
-		long arg1value=arg1.getInputSize()+arg1.getOutputSize();
-		
-		if (arg0value < arg1value) return -1;
-		if (arg0value > arg1value) return 1;
-		
-		return 0;
+	public int compare(Job job1, Job job2) {
+		long job1value = job1.getInputSize() + job1.getOutputSize();
+		long job2value = job2.getInputSize() + job2.getOutputSize();
+
+		return Long.compare(job1value, job2value);
 	}
 
 }

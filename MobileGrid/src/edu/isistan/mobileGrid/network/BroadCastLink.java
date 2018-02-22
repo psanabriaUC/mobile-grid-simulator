@@ -18,6 +18,7 @@ public class BroadCastLink extends Link {
 	public Set<Node> getDestinations() {
 		return NetworkModel.getModel().getNodes();
 	}
+
 	@Override
 	public boolean canSend(Node scr, Node dst) {
 		return (scr.isOnline())&&(dst.isOnline());

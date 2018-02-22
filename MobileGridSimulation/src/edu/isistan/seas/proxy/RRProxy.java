@@ -14,7 +14,6 @@ import edu.isistan.simulator.Simulation;
 public class RRProxy extends SchedulerProxy {
 
 	private int next = 0;
-	protected int idSend = 0;
 
 	public RRProxy(String name) {
 		super(name);
@@ -35,7 +34,7 @@ public class RRProxy extends SchedulerProxy {
 			return;
 		}
 		
-		if(next >= devices.size()) next=0;
+		if (next >= devices.size()) next=0;
 		
 		Collection<Device> deviceList = this.devices.values();
 		Device[] devArray = new Device[deviceList.size()];

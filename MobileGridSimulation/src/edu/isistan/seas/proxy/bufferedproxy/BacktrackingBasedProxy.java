@@ -2,16 +2,13 @@ package edu.isistan.seas.proxy.bufferedproxy;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 
 import edu.isistan.mobileGrid.jobs.Job;
 import edu.isistan.mobileGrid.jobs.JobStatsUtils;
-import edu.isistan.mobileGrid.network.NetworkModel;
 import edu.isistan.mobileGrid.node.Device;
+import edu.isistan.mobileGrid.node.SchedulerProxy;
 import edu.isistan.seas.node.DefaultBatteryManager;
 import edu.isistan.seas.proxy.RSSIDataJoulesEvaluator;
-import edu.isistan.simulator.Logger;
-import edu.isistan.simulator.Simulation;
 
 public class BacktrackingBasedProxy extends BufferedSchedulerProxy {
 	
@@ -26,10 +23,10 @@ public class BacktrackingBasedProxy extends BufferedSchedulerProxy {
 	
 	public BacktrackingBasedProxy(String name, String bufferValue) {
 		super(name, bufferValue);
-		currentAssignment = new HashMap<Short,ArrayList<Short>>();
-		bestAssignment = new HashMap<Short,Short[]>();
-		accDataPerDevice = new HashMap<Short,Double>();
-		deviceIds = new HashMap<Short,Device>();
+		currentAssignment = new HashMap<>();
+		bestAssignment = new HashMap<>();
+		accDataPerDevice = new HashMap<>();
+		deviceIds = new HashMap<>();
 	}
 
 	@Override
@@ -39,7 +36,7 @@ public class BacktrackingBasedProxy extends BufferedSchedulerProxy {
 
 	@Override
 	protected void assignBufferedJobs() {
-		mapDeviceswithIDs();
+		mapDevicesWithIDs();
 		initializeStructures();
 		Long init = System.currentTimeMillis();		
 		generateBestAssignment((short) 0);
@@ -48,10 +45,9 @@ public class BacktrackingBasedProxy extends BufferedSchedulerProxy {
 		assignJobs();
 	}
 	
-	private void mapDeviceswithIDs() {
+	private void mapDevicesWithIDs() {
 		deviceQuantity = 0;
-		for (Iterator<Device> iterator = devices.values().iterator(); iterator.hasNext();) {
-			Device device = (Device) iterator.next();
+		for (Device device : devices.values()) {
 			deviceIds.put(deviceQuantity, device);
 			deviceQuantity++;
 		}		
@@ -65,12 +61,10 @@ public class BacktrackingBasedProxy extends BufferedSchedulerProxy {
 	}
 
 	private void assignJobs() {
-		Short devNmb = 0;
 		Short[] jobIds;
-		for (Iterator<Short> iterator = bestAssignment.keySet().iterator(); iterator.hasNext();) {
-			devNmb = (Short) iterator.next();
-			jobIds = bestAssignment.get(devNmb);
-			sendJobsToDevice(deviceIds.get(devNmb),jobIds);			
+		for (Short aShort : bestAssignment.keySet()) {
+			jobIds = bestAssignment.get(aShort);
+			sendJobsToDevice(deviceIds.get(aShort), jobIds);
 		}
 	}
 
@@ -103,11 +97,11 @@ public class BacktrackingBasedProxy extends BufferedSchedulerProxy {
 				Double accData = accDataPerDevice.get(devNmb);
 				accDataPerDevice.put(devNmb, accData+jobDataInMb);
 				
-				generateBestAssignment((short)(nextJob+1));
+				generateBestAssignment((short)(nextJob + 1));
 				
-				int jobcount = jobs.size();				
-				if (jobcount > 0) jobs.remove(jobcount-1);
-				accDataPerDevice.put(devNmb, accData-jobDataInMb);
+				int jobCount = jobs.size();
+				if (jobCount > 0) jobs.remove(jobCount - 1);
+				accDataPerDevice.put(devNmb, accData - jobDataInMb);
 			}
 		}
 	}
@@ -115,9 +109,8 @@ public class BacktrackingBasedProxy extends BufferedSchedulerProxy {
 	private void saveCurrentAssignment() {
 		bestFitness = currentFitnessValue;
 		bestAssignment.clear();
-		for (Iterator<Short> iterator = currentAssignment.keySet().iterator(); iterator.hasNext();) {
-			Short devNmb = (Short) iterator.next();			
-			ArrayList<Short> assignedJobs = currentAssignment.get(devNmb);			
+		for (Short devNmb : currentAssignment.keySet()) {
+			ArrayList<Short> assignedJobs = currentAssignment.get(devNmb);
 			Short[] assignmentsToSave = new Short[assignedJobs.size()];
 			assignmentsToSave = assignedJobs.toArray(assignmentsToSave);
 			bestAssignment.put(devNmb, assignmentsToSave);
@@ -126,7 +119,7 @@ public class BacktrackingBasedProxy extends BufferedSchedulerProxy {
 
 	private double evaluateCurrentSolution() {
 		double totalJoulesConsumed = 0;
-		int totalJobTransfered = 0; 
+		int totalJobsTransferred = 0;
 		for (short devNmb=0; devNmb < deviceQuantity; devNmb++){
 			 //calculating energy consumed
 			 Device device = deviceIds.get(devNmb);
@@ -134,13 +127,15 @@ public class BacktrackingBasedProxy extends BufferedSchedulerProxy {
 			 totalJoulesConsumed+= devJoulesConsumed;
 			 
 			 //calculating jobs transfered
-			 double devicePerOfAvailableEnergy = (double)(device.getLastBatteryLevelUpdate() / DefaultBatteryManager.PROFILE_ONE_PERCENT_REPRESENTATION);
-			 double deviceJoulesAvailable = ((double)(devicePerOfAvailableEnergy * device.getTotalBatteryCapacityInJoules()) / (double)100);
+			 double devicePerOfAvailableEnergy = (double)(SchedulerProxy.PROXY.getLastReportedSOC(device) /
+                     DefaultBatteryManager.PROFILE_ONE_PERCENT_REPRESENTATION);
+			 double deviceJoulesAvailable = (devicePerOfAvailableEnergy * device.getTotalBatteryCapacityInJoules() /
+                     (double)100);
 			 if ((deviceJoulesAvailable - devJoulesConsumed) >= (0d)){
-				 totalJobTransfered+=currentAssignment.get(devNmb).size();
+				 totalJobsTransferred += currentAssignment.get(devNmb).size();
 			 }
 		}
 		
-		return (((double)totalJobTransfered) / totalJoulesConsumed);
+		return (((double)totalJobsTransferred) / totalJoulesConsumed);
 	}
 }

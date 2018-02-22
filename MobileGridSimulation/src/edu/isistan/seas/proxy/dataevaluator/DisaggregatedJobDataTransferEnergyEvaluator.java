@@ -1,5 +1,6 @@
 package edu.isistan.seas.proxy.dataevaluator;
 
+import edu.isistan.mobileGrid.node.SchedulerProxy;
 import edu.isistan.seas.node.DefaultBatteryManager;
 import edu.isistan.seas.proxy.DataAssignment;
 import edu.isistan.seas.proxy.DataAssignmentEvaluatorIF;
@@ -18,12 +19,13 @@ public class DisaggregatedJobDataTransferEnergyEvaluator implements
 	@Override
 	public double eval(DataAssignment da) {
 		//double costPerKb = getCostInJoulesPerKbOfData(da.getDevice());
-		int completelyTransferedJobs=0;
-		double totalDataTransfered=0.0d;
-		double energyRequired=0;
+		int completelyTransferedJobs = 0;
+		double totalDataTransfered = 0.0d;
+		double energyRequired = 0;
 		double energyWasted = 0;
 		double missedJobs = 0.0d;
-		double nodeAvailableEnergy = ((double)((da.getDevice().getLastBatteryLevelUpdate() / DefaultBatteryManager.PROFILE_ONE_PERCENT_REPRESENTATION) * da.getDevice().getTotalBatteryCapacityInJoules())) / (double)(100);
+		double nodeAvailableEnergy = ((double)((SchedulerProxy.PROXY.getLastReportedSOC(da.getDevice()) /
+				DefaultBatteryManager.PROFILE_ONE_PERCENT_REPRESENTATION) * da.getDevice().getTotalBatteryCapacityInJoules())) / (double)(100);
 		double nodeMaxAvailableForTransferring = ((double)maxAvailable * nodeAvailableEnergy) / (double)100;
 		for (int job_index = 0; job_index < da.getAssignedJobs().size(); job_index++) {
 			energyRequired+=  da.getDevice().getEnergyWasteInTransferringData(da.getAssignedJobs().get(job_index).getInputSize());

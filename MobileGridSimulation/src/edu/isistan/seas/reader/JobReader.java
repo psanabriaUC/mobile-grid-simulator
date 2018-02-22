@@ -44,7 +44,7 @@ public class JobReader extends Thread {
 
 			// Expected format for each line in the configuration file:
 			// [jobId];[# of CPU cycles required to complete];[arrival time](;[input size];[output size])?
-			while(line != null){
+			while (line != null){
 				line = line.trim();
 				if (line.equals("") || line.startsWith("#")) {
 					line = this.conf.readLine();
@@ -58,12 +58,10 @@ public class JobReader extends Thread {
 					int inputSize = 0;
 					int outputSize = 0;
 					if (ts.hasMoreTokens()) {
-						inputSize=Integer.parseInt(ts.nextToken());
-						outputSize=Integer.parseInt(ts.nextToken());
-					} else {
-                        if (networkMeasurementEnable && (inputSize == 0 || outputSize == 0)) {
-                            lackingJobParameter = true;
-                        }
+						inputSize = Integer.parseInt(ts.nextToken());
+						outputSize = Integer.parseInt(ts.nextToken());
+					} else if (networkMeasurementEnable) {
+						lackingJobParameter = true;
                     }
 
                     // For each job, we create an encompassing event and send it to the scheduling proxy chosen for this simulation.

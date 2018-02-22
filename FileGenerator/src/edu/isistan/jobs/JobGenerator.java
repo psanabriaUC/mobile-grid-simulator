@@ -79,7 +79,7 @@ public class JobGenerator {
 		ByteArrayOutputStream bo=new ByteArrayOutputStream();
 		BufferedWriter writer=new BufferedWriter(new OutputStreamWriter(bo));
 		try {
-			while(jobs.size()>0){
+			while(jobs.size() > 0){
 				writer.write(jobs.remove(0).toString()+"\n");	
 			}
 			writer.flush();

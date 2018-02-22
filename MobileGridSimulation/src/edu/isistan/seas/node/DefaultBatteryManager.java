@@ -22,22 +22,59 @@ public class DefaultBatteryManager implements BatteryManager {
 	//hay que inicializarlos con un valor al principio
 	private double lastCharge;
 	private long lastMeasurement;
-	private int reportedCharge;		
-	private long batteryCapacityInJoules; // the battery capacity of a device expressed in Joules. Joules = w*h = w * 3600 sec
-	private int initialSOC; // this represents the State Of Charge of the device when it joins the grid
+	private int reportedCharge;
+
+    /**
+     * The battery capacity of a device expressed in Joules. Joules = w*h = w * 3600 sec.
+     */
+	private long batteryCapacityInJoules;
+
+    /**
+     * The initial state of charge of this device when it joined the grid, as a value between 0 and 10.000.000, where
+     * the latter means 100%.
+     */
+    private int initialSOC;
 	
 	//hay que inicializarlos con un valor al principio
 	private double estimatedUpTime;
+
+    /**
+     * Used by the SEAS estimation model. This is the number of battery samples taken into account so far.
+     */
 	private double measures = 1;
+
+    /**
+     * The simulation time at which the last battery update event was transmitted.
+     */
 	private double lastEventTime;
+
+	// TODO: move towards proxy
 	private double lastReportedCharge;
+
+    /**
+     * The simulation timestamp at which the device associated with this class started working, therefore, the time
+     * since which the battery levels started to decrease.
+     */
 	private long startTime;
-	
-	private Event lastAddedEvent; 
-	
+
+    /**
+     * A reference to the next battery update event to post in the simulation.
+     */
+	private Event lastAddedEvent;
+
+    /**
+     * Battery trace files associated with this device, gathered from real-life profiling.
+     */
 	private SortedSet<ProfileData>[] profiles;
+
+    /**
+     * The index of the current profile in active use.
+     */
 	private int currentProfile;
-	
+
+    /**
+     * The {@link edu.isistan.mobileGrid.node.ExecutionManager} associated with this battery manager.
+     */
 	private DefaultExecutionManager executionManager;
 
     /**

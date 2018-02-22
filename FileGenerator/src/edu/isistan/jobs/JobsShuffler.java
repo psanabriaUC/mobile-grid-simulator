@@ -15,39 +15,35 @@ public class JobsShuffler {
 
 	public static void main(String[] args) {
 		
-		ArrayList<JobInformation> jobs= new ArrayList<JobInformation>();
+		ArrayList<JobInformation> jobs= new ArrayList<>();
 		
-		if(args.length<1){
+		if(args.length < 1) {
 			System.err.println("A jobs file must be provided as argument along its creation parameters related to jobs minTime and maxTime");
 		}
 		String jobsFile=args[0];
-		long minTime=Long.parseLong(args[1]); 
-	    long maxTime=Long.parseLong(args[2]);
+		long minTime = Long.parseLong(args[1]);
+	    long maxTime = Long.parseLong(args[2]);
 		try {
 			BufferedReader br = new BufferedReader(new FileReader(jobsFile));
-			String line= br.readLine();
-			while (line!=null){
+			String line = br.readLine();
+			while (line != null){
 				if (!line.startsWith("#")){
 					String[] jobParts=line.split(";");
 					long newtime =( (long) ( Math.random()*(maxTime-minTime)) ) + minTime;
 					jobs.add(new JobInformation(newtime,Integer.parseInt(jobParts[0]),Long.parseLong(jobParts[1]),Integer.parseInt(jobParts[3]),Integer.parseInt(jobParts[4])));
 				}
-				line=br.readLine();
+				line = br.readLine();
 			}
 			br.close();
-			
-		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		Collections.sort(jobs);
-		for (Iterator iterator = jobs.iterator(); iterator.hasNext();) {
-			JobInformation jobInformation = (JobInformation) iterator.next();
+		for (JobInformation jobInformation : jobs) {
 			System.out.println(jobInformation.toString());
-		};		
+		}
+		;
 	}
 
 }

@@ -6,7 +6,7 @@ import java.util.Iterator;
 import edu.isistan.mobileGrid.jobs.Job;
 import edu.isistan.mobileGrid.node.Device;
 
-public class DataAssignment{
+public class DataAssignment {
 	
 	public static DataAssignmentEvaluatorIF evaluator = new RemainingDataTransferingEvaluator();
 	
@@ -24,8 +24,6 @@ public class DataAssignment{
 	
 	/**jobs that were scheduled to the device*/
 	private ArrayList<Job> assignedJobs;
-
-	 
 	
 	public DataAssignment(Device dev) {
 		this.device=dev;
@@ -76,7 +74,7 @@ public class DataAssignment{
 	}
 	
 	@Override
-	public DataAssignment clone(){
+	public DataAssignment clone() {
 		DataAssignment dataAssignmentClone = new DataAssignment(this.device);
 		dataAssignmentClone.assignedJobs = this.assignedJobs;
 		dataAssignmentClone.mbToBeReceived = this.mbToBeReceived;
@@ -111,8 +109,7 @@ public class DataAssignment{
 	}
 
 	public void scheduleJobs(ArrayList<Job> assignedJobs2) {
-		for (Iterator<Job> iterator = assignedJobs2.iterator(); iterator.hasNext();) {
-			Job job = (Job) iterator.next();
+		for (Job job : assignedJobs2) {
 			this.scheduleJob(job);
 		}		
 	}

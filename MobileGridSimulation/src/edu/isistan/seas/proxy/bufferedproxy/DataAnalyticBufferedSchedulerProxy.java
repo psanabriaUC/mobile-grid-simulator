@@ -43,13 +43,11 @@ public class DataAnalyticBufferedSchedulerProxy extends BufferedSchedulerProxy {
 			}
 			else
 				break;				
-		}		
-		
-		for (Iterator<DataAssignment> iterator = totalDataPerDevice.iterator(); iterator.hasNext();) {
-			DataAssignment deviceAssignment = (DataAssignment) iterator.next();
+		}
+
+		for (DataAssignment deviceAssignment : totalDataPerDevice) {
 			Device current = deviceAssignment.getDevice();
-			for (Iterator<Job> iterator2 = deviceAssignment.getAssignedJobs().iterator(); iterator2.hasNext();) {
-				Job job = (Job) iterator2.next();
+			for (Job job : deviceAssignment.getAssignedJobs()) {
 				queueJobTransferring(current, job);
 				/*
 				Logger.logEntity(this, "Job assigned to ", job.getJobId() ,current);
@@ -57,7 +55,7 @@ public class DataAnalyticBufferedSchedulerProxy extends BufferedSchedulerProxy {
 				long currentSimTime = Simulation.getTime();
 				JobStatsUtils.transfer(job, current, time-currentSimTime,currentSimTime);
 				*/
-			}			
+			}
 		}		
 	}
 

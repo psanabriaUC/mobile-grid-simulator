@@ -5,7 +5,6 @@ import java.util.ArrayList;
 import edu.isistan.mobileGrid.jobs.Job;
 import edu.isistan.mobileGrid.jobs.JobStatsUtils;
 import edu.isistan.mobileGrid.network.Message;
-import edu.isistan.mobileGrid.network.NetworkModel;
 import edu.isistan.mobileGrid.network.Node;
 import edu.isistan.mobileGrid.network.UpdateMsg;
 import edu.isistan.mobileGrid.node.Device;
@@ -21,17 +20,16 @@ import edu.isistan.simulator.Simulation;
  */
 public class LazyProxy extends SchedulerProxy {
 	
-	private static final int FIRST = 0;	
-	//protected HashMap<String,Device> devices = new HashMap<String,Device>();
+	private static final int FIRST = 0;
 	protected ArrayList<Job> inQueueJobs = null;
-	protected ArrayList<Device> iddleDevices = null;
-	protected ArrayList<Long> startIddleTimes = null;
+	protected ArrayList<Device> idleDevices = null;
+	protected ArrayList<Long> startIdleTimes = null;
 	
 	public LazyProxy(String name) {		
 		super(name);		
-		inQueueJobs = new ArrayList<Job>();
-		iddleDevices = new ArrayList<Device>();
-		startIddleTimes = new ArrayList<Long>();		
+		inQueueJobs = new ArrayList<>();
+		idleDevices = new ArrayList<>();
+		startIdleTimes = new ArrayList<>();
 	}
 
 	@Override
@@ -61,13 +59,13 @@ public class LazyProxy extends SchedulerProxy {
 				JobStatsUtils.transfer(job, scr, time-currentSimTime,currentSimTime);
 				*/
 			} else {
-				iddleDevices.add((Device)message.getSource());
-				startIddleTimes.add(Simulation.getTime());
+				idleDevices.add((Device)message.getSource());
+				startIdleTimes.add(Simulation.getTime());
 			}
 		} else if(message.getData() instanceof UpdateMsg) {
 			UpdateMsg updateMessage = (UpdateMsg) message.getData();
 			Device device = devices.get(updateMessage.getNodeId());
-			device.setLastBatteryLevelUpdate(updateMessage.getPercentageOfRemainingBattery());
+            updateDeviceSOC(device, updateMessage.getPercentageOfRemainingBattery());
 			JobStatsUtils.registerUpdateMessage(message.getSource(), updateMessage);
 		}
 
@@ -119,8 +117,8 @@ public class LazyProxy extends SchedulerProxy {
 	}
 	
 	private void assignJob() {
-		if (!iddleDevices.isEmpty() && !inQueueJobs.isEmpty()) {
-			Device device = iddleDevices.remove(FIRST);
+		if (!idleDevices.isEmpty() && !inQueueJobs.isEmpty()) {
+			Device device = idleDevices.remove(FIRST);
 			Job job = inQueueJobs.remove(FIRST);
 			queueJobTransferring(device, job);
 		}		
@@ -129,18 +127,18 @@ public class LazyProxy extends SchedulerProxy {
 	@Override
 	public void remove(Device device) {
 		this.devices.remove(device.getName());
-		int deviceIndex = iddleDevices.indexOf(device);
+		int deviceIndex = idleDevices.indexOf(device);
 		if (deviceIndex > -1){
-			iddleDevices.remove(deviceIndex);
-			startIddleTimes.remove(deviceIndex);
+			idleDevices.remove(deviceIndex);
+			startIdleTimes.remove(deviceIndex);
 		}
 	}
 
 	@Override
 	public void addDevice(Device device) {
 		this.devices.put(device.getName(),device);
-		iddleDevices.add(device);
-		startIddleTimes.add(Simulation.getTime());
+		idleDevices.add(device);
+		startIdleTimes.add(Simulation.getTime());
 	}
 
 }

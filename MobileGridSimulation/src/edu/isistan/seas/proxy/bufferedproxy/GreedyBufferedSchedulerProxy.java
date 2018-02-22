@@ -22,7 +22,7 @@ public class GreedyBufferedSchedulerProxy extends BufferedSchedulerProxy {
 
 	@Override
 	protected void queueJob(Job job) {
-		int dataTransferRequirement = job.getInputSize()+job.getOutputSize(); 
+		int dataTransferRequirement = job.getInputSize() + job.getOutputSize();
 		boolean inserted = false;
 		int queueIndex = 0;
 		while (!inserted){

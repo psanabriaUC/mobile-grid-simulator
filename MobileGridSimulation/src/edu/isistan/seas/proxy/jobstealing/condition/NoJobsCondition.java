@@ -7,7 +7,7 @@ public class NoJobsCondition implements StealingCondition {
 
 	@Override
 	public boolean canSteal(Device stealer, Device victim, StealerProxy proxy) {
-		return stealer.getWaitingJobs()==0;
+		return stealer.getWaitingJobs() == 0;
 	}
 
 }

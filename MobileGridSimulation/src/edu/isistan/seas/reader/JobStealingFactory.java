@@ -32,7 +32,7 @@ public class JobStealingFactory implements ManagerFactory {
 
 	@Override
 	public Device createDevice(String name, BatteryManager bt,	ExecutionManager em, NetworkEnergyManager nem) {		
-		return new JSDevice(name,bt,em,nem);
+		return new JSDevice(name, bt, em, nem);
 	}
 
 }

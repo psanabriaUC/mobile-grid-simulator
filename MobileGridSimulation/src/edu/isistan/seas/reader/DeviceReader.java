@@ -51,7 +51,7 @@ public class DeviceReader {
 		int sim_id = SimReader.getSim_id();
 		// Expected format for each line in the configuration file:
         // [device_name];[device_flops];[max_concurrent_active_jobs_supported](;[battery_capacity_in_joules])?
-		while (this.line!=null) {
+		while (this.line != null) {
 			StringTokenizer st = new StringTokenizer(line, ";");
 			String nodeId = st.nextToken();
 			long flops = Long.parseLong(st.nextToken());
@@ -63,15 +63,16 @@ public class DeviceReader {
 				batteryCapacityUndefined = true;
 			}
 
-			DeviceLoader loader = new DeviceLoader(nodeId, flops,maxActiveJobs, networkEnergyManagementEnable, batteryCapacityInJoules);
-			DeviceTuple dt =  new DeviceTuple(nodeId,flops,batteryCapacityInJoules,sim_id);
-			devicePersister.saveDeviceIntoMemory(nodeId, dt);
+			DeviceLoader loader = new DeviceLoader(nodeId, flops, maxActiveJobs, networkEnergyManagementEnable,
+					batteryCapacityInJoules);
+			DeviceTuple tuple =  new DeviceTuple(nodeId,flops,batteryCapacityInJoules,sim_id);
+			devicePersister.saveDeviceIntoMemory(nodeId, tuple);
 
 			this.devices.put(nodeId, loader);
 			this.nextLine();
 		}
 		
-		if (batteryCapacityUndefined){
+		if (batteryCapacityUndefined) {
 			System.out.println("[WARN] At least one node has no battery capacity defined and the value of Long.MAX_VALUE is being used instead");
 		}
 		this.reader.close();
@@ -93,10 +94,10 @@ public class DeviceReader {
      * @throws IOException if there is a problem reading the file.
      */
 	private void nextLine() throws IOException{
-		this.line=this.reader.readLine();
-		if(line==null) return;
-		this.line=this.line.trim();
-		while(line.startsWith("#") || line.equals("")) {
+		this.line = this.reader.readLine();
+		if (line == null) return;
+		this.line = this.line.trim();
+		while (line.startsWith("#") || line.equals("")) {
             this.line = this.reader.readLine().trim();
         }
 	}

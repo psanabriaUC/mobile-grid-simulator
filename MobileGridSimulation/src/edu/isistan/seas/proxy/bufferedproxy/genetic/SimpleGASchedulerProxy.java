@@ -309,16 +309,15 @@ public class SimpleGASchedulerProxy extends BufferedSchedulerProxy {
 	
 	
 	protected void scheduleJobs(ArrayList<DataAssignment> solution) {
-		for (Iterator<DataAssignment> iterator = solution.iterator(); iterator.hasNext();) {
-			DataAssignment deviceAssignment = (DataAssignment) iterator.next();
-			Device current = deviceAssignment.getDevice();
-			TransferInfo prev = null;
-			for (Iterator<Job> iterator2 = deviceAssignment.getAssignedJobs().iterator(); iterator2.hasNext();) {
-				Job job = (Job) iterator2.next();
-				Logger.logEntity(this, "Job assigned to ", job.getJobId(), current);
-				current.incrementIncomingJobs();
+        for (DataAssignment deviceAssignment : solution) {
+            Device current = deviceAssignment.getDevice();
+            TransferInfo prev = null;
+            for (Job job : deviceAssignment.getAssignedJobs()) {
+                Logger.logEntity(this, "Job assigned to ", job.getJobId(), current);
+                // current.incrementIncomingJobs();
+                incrementIncomingJobs(current);
 
-				queueJobTransferring(current, job);
+                queueJobTransferring(current, job);
 
 				/*
 				JobStatsUtils.setJobAssigned(job);
@@ -344,8 +343,8 @@ public class SimpleGASchedulerProxy extends BufferedSchedulerProxy {
 					prev.nextJobId = job.getJobId();
 				prev = transferInfo;
 				*/
-			}
-		}
+            }
+        }
 	}
 
 	

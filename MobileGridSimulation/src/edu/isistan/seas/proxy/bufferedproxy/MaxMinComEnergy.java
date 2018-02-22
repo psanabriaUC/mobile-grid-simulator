@@ -27,7 +27,6 @@ public class MaxMinComEnergy extends BufferedSchedulerProxy {
 				if (currentJobDataTransferRequirement < dataTransferRequirement) {
 					bufferedJobs.add(queueIndex, job);
 					inserted = true;
-					
 				} else {
 					queueIndex++;
 				}

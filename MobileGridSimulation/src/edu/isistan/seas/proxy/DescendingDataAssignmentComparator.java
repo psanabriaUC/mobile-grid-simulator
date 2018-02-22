@@ -5,7 +5,7 @@ import java.util.Comparator;
 public class DescendingDataAssignmentComparator implements
 		Comparator<DataAssignment> {
 
-	DataAssignmentEvaluatorIF evaluator;
+	private DataAssignmentEvaluatorIF evaluator;
 	
 	public DescendingDataAssignmentComparator(DataAssignmentEvaluatorIF eval){
 		evaluator=eval;
@@ -17,15 +17,8 @@ public class DescendingDataAssignmentComparator implements
 		
 		double da1Value = evaluator.eval(da1); 
 		double da2Value = evaluator.eval(da2);
-		
-		if (da1Value > da2Value)
-			return -1;
-		else{
-			if (da1Value < da2Value)
-				return 1;			
-			else
-				return 0;
-		}
+
+		return Double.compare(da2Value, da1Value);
 	}
 
 }

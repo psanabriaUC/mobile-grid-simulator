@@ -23,7 +23,7 @@ public class RTCScheduler extends DataIntensiveScheduler {
 		Device current = totalDataPerDevice.get(FIRST).getDevice();
 		Logger.logEntity(this, "Job assigned to ", job.getJobId() ,current);
 		JobStatsUtils.setJobAssigned(job);
-		current.incrementIncomingJobs();
+		incrementIncomingJobs(current);
 
 		queueJobTransferring(current, job);
 
