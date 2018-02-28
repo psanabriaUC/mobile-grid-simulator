@@ -34,17 +34,17 @@ public class MessageHandler<T> {
      * Called when receiving confirmation that a delivered message has been successfully received by the intended
      * receiver.
      *
-     * @param transferInfo The information of the message's transfer state.
+     * @param message The message that was sent.
      */
-    public void onMessageSentAck(TransferInfo<T> transferInfo) {}
+    public void onMessageSentAck(Message<T> message) {}
 
     /**
-     * Called after {@link MessageHandler#onMessageSentAck(TransferInfo)} only if the entire payload of the message
+     * Called after {@link MessageHandler#onMessageSentAck(Message)} only if the entire payload of the message
      * has been confirmed to have been received.
      *
-     * @param transferInfo The information of the message's transfer state.
+     * @param message The message that was sent.
      */
-    public void onMessageFullySent(TransferInfo<T> transferInfo) {};
+    public void onMessageFullySent(Message<T> message) {};
 
     /**
      * Called when a message sent by someone else failed to arrive to this {@link Node}.

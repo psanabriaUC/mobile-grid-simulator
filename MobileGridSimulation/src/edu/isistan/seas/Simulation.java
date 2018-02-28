@@ -11,6 +11,7 @@ import edu.isistan.mobileGrid.network.NetworkModel;
 import edu.isistan.mobileGrid.network.Node;
 import edu.isistan.mobileGrid.network.SimpleNetworkModel;
 import edu.isistan.mobileGrid.network.WifiLink;
+import edu.isistan.mobileGrid.node.CloudNode;
 import edu.isistan.mobileGrid.node.Device;
 import edu.isistan.mobileGrid.node.SchedulerProxy;
 import edu.isistan.mobileGrid.node.TransferInfo;
@@ -79,10 +80,13 @@ public class Simulation {
 		cnfPathArr = cnfPath.split("-");
 		cnfPath = cnfPathArr[0];
 		Logger.EXPERIMENT = cnfPath;
+
+		CloudNode cloudNode = CloudNode.getInstance();
+		Set<Node> cloudNodeSet = new HashSet<>();
+		cloudNodeSet.add(cloudNode);
 		
 		for (Node node  : NetworkModel.getModel().getNodes()) {
-			if(node != SchedulerProxy.PROXY)
-			{
+			if(node instanceof Device) {
 				short rssi = ((Device)node).getWifiRSSI();
 				Set<Node> nodeSet = new HashSet<Node>();
 				nodeSet.add(node);
@@ -90,11 +94,14 @@ public class Simulation {
 				Set<Node> proxySet = new HashSet<Node>();
 				proxySet.add(SchedulerProxy.PROXY);
 				
-				WifiLink wl1 = new WifiLink(rssi,nodeSet,proxySet);
-				WifiLink wl2 = new WifiLink(rssi,proxySet,nodeSet);
+				WifiLink wl1 = new WifiLink(rssi, nodeSet, proxySet);
+				WifiLink wl2 = new WifiLink(rssi, proxySet, nodeSet);
+				WifiLink wl3 = new WifiLink(rssi, nodeSet, cloudNodeSet);
+
 				
 				NetworkModel.getModel().addNewLink(wl1);
 				NetworkModel.getModel().addNewLink(wl2);
+                NetworkModel.getModel().addNewLink(wl3);
 			}
 		}
 

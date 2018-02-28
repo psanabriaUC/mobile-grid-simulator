@@ -90,11 +90,10 @@ public class DefaultNetworkEnergyManager implements NetworkEnergyManager {
 	 * transfer could be performed with the available energy then the invocation returns true, otherwise
 	 * returns false. If networkEnergyManagementEnable flag is false, then the invocation always returns true.
 	 * */
-	private boolean registerEnergyWaste(Node source, Node destination, long dataSizeInBytes, boolean transferingType) {
+	private boolean registerEnergyWaste(Node source, Node destination, long dataSizeInBytes, boolean transferringType) {
 		boolean completedTransfer = true;
 		
-		if (networkEnergyManagementEnable){
-			
+		if (networkEnergyManagementEnable) {
 			double dataSizeInKb = dataSizeInBytes / 1024.0;
 			double joulesPerKbSent = dataSizeInKb <= TEN_KILOBYTES ? wifiRSSI_joulesPerKb_10kb.get(wifiRSSI) : wifiRSSI_joulesPerKb_100kb.get(wifiRSSI);									
 			double joulesNeedForTransferData = dataSizeInKb * joulesPerKbSent;
@@ -105,18 +104,20 @@ public class DefaultNetworkEnergyManager implements NetworkEnergyManager {
 			//infer the available joules of the node from its current battery percentage
 			//  100% ------------------------totalJoules
 			//  SOC%-------------------------availableJoules
-			double availableJoules = ((batteryManager.getCurrentSOC() * (double)batteryManager.getBatteryCapacityInJoules()) / ((double)100 * (double)BatteryManager.PROFILE_ONE_PERCENT_REPRESENTATION));
+			double availableJoules = ((batteryManager.getCurrentSOC() * (double)batteryManager.getBatteryCapacityInJoules()) /
+                    ((double)100 * (double)BatteryManager.PROFILE_ONE_PERCENT_REPRESENTATION));
 			Logger.logEnergy2( "registerEnergyWaste","availableJoules="+availableJoules, "joulesNeedForTransferData="+joulesNeedForTransferData);
 			
 			// 1) calculate the percentage of battery represented by the cost of transfer the KBs of data through the network
 			// totalJoules ------------------100%
 			// joulesNeedForTransferData-----batteryPercentage%
 			// NOTE: in the above calculus a transformation of the batteryPercentage% value to the representation used by the battery manager is included
-			double batteryPercentageNeeded = ((joulesNeedForTransferData * (double)100) / (double)batteryManager.getBatteryCapacityInJoules()) * (double)BatteryManager.PROFILE_ONE_PERCENT_REPRESENTATION;
+			double batteryPercentageNeeded = ((joulesNeedForTransferData * (double)100) / (double)batteryManager.getBatteryCapacityInJoules()) *
+					(double)BatteryManager.PROFILE_ONE_PERCENT_REPRESENTATION;
 						
 			if (Double.isInfinite(joulesNeedForTransferData) ||
 				Double.isNaN(joulesNeedForTransferData) || 
-				joulesNeedForTransferData > availableJoules){
+				joulesNeedForTransferData > availableJoules) {
 				
 				joulesNeedForTransferData = availableJoules;				
 				batteryPercentageNeeded = batteryManager.getCurrentSOC();
@@ -125,7 +126,7 @@ public class DefaultNetworkEnergyManager implements NetworkEnergyManager {
 			}
 			
 			batteryManager.onNetworkEnergyConsumption(batteryPercentageNeeded);
-			if (transferingType == TRANSFER_FROM_DEVICE)			
+			if (transferringType == TRANSFER_FROM_DEVICE)
 				JobStatsUtils.registerSendingDataEnergy(source, joulesNeedForTransferData,dataSizeInKb/(double)1024);
 			else
 				JobStatsUtils.registerReceivingDataEnergy(destination, joulesNeedForTransferData, dataSizeInKb/(double)1024);

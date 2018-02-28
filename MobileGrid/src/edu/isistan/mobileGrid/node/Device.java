@@ -20,7 +20,6 @@ import edu.isistan.simulator.Simulation;
  *     <li>Receiver's {@link Device#incomingData(Node, int)}</li>
  *     <li>Receiver's {@link Device#onMessageReceived(Message)}</li>
  *     <li>Sender's {@link Device#onMessageSentAck(Message message)}</li>
- *     <li>Receiver's {@link Device#addJob(Job)}</li>
  * </ul>
  * Jobs are received by this device, executed, and then their completion is reported back to the original sender.
  */
@@ -31,6 +30,8 @@ public class Device extends Entity implements Node, DeviceListener {
 	public static final int EVENT_TYPE_FINISH_JOB = 2;
 	public static final int EVENT_TYPE_DEVICE_START = 3;
 	public static final int EVENT_TYPE_STATUS_NOTIFICATION = 4;
+	public static final int EVENT_TYPE_SCREEN_ACTIVITY = 5;
+	public static final int EVENT_NETWORK_ACTIVITY = 6;
 
 	/* Size of message buffer for transfers in bytes */
 	public static int MESSAGES_BUFFER_SIZE = 1024 * 1024; // 1mb
@@ -49,13 +50,16 @@ public class Device extends Entity implements Node, DeviceListener {
     /**
      * Queue of messages that need to be transferred through the communication channel.
      */
-	protected Queue<TransferInfo> transfersPending = new LinkedList<>();
+	//protected Queue<TransferInfo> transfersPending = new LinkedList<>();
+    protected PriorityQueue<TransferInfo> transfersPending = new PriorityQueue<>();
+
+    protected Map<Integer, TransferInfo> transferInfoMap = new HashMap<>();
 
     /**
      * List of jobs that have been finished and have already been reported to the proxy.
      * This is used for logging purposes only by the simulator.
      */
-	protected List<TransferInfo> finishedJobTransfersCompleted = new LinkedList<>();
+	protected List<Job> finishedJobsCompleted = new LinkedList<>();
 
     /**
      * Flag to indicate this device is currently receiving data from the network.
@@ -125,7 +129,9 @@ public class Device extends Entity implements Node, DeviceListener {
      * @return The respective {@link MessageHandler} for the given data.
      */
     protected MessageHandler getMessageHandler(Object data) {
-        if (data instanceof Job) {
+        if (data == null) {
+            return defaultMessageHandler;
+        } else if (data instanceof Job) {
             return jobMessageHandler;
         } else if (data instanceof UpdateMsg) {
             return updateMessageHandler;
@@ -170,39 +176,28 @@ public class Device extends Entity implements Node, DeviceListener {
      */
 	@Override
 	public void onMessageSentAck(Message messageSent) {
-        int id = messageSent.getId();
-        if (id != 0) {
-            isSending = false;
-            TransferInfo transferInfo = transfersPending.peek();
+        isSending = false;
 
-            // Sanity checking of the message offset logic.
-            if (transferInfo.getCurrentIndex() != messageSent.getOffset()) {
-                throw new IllegalStateException("Message offset mismatch. Expected " + transferInfo.getCurrentIndex() +
-                        " but got " + messageSent.getOffset());
+        int messageSize = (int) NetworkModel.getModel().getAckMessageSizeInBytes();
+
+        if (networkEnergyManager.onReceiveData(messageSent.getDestination(), this, messageSize)) { // if the ack could be processed then the node update
+            transferInfoMap.get(messageSent.getId()).increaseIndex();
+
+            getMessageHandler(messageSent.getData()).onMessageSentAck(messageSent);
+
+            // IF FINISH CURRENT TRANSFER
+            if (messageSent.isLastMessage()) {
+                getMessageHandler(messageSent.getData()).onMessageFullySent(messageSent);
             }
 
-            int messageSize = (int) NetworkModel.getModel().getAckMessageSizeInBytes();
+            TransferInfo nextTransfer = transfersPending.peek();
+            while (nextTransfer != null && nextTransfer.allMessagesSent()) {
+                transfersPending.remove();
+                nextTransfer = transfersPending.peek();
+            }
 
-            if (networkEnergyManager.onReceiveData(messageSent.getDestination(), this, messageSize)) {// if the ack could be processed then the node update
-                // internal data structures
-                getMessageHandler(messageSent.getData()).onMessageSentAck(transferInfo);
-
-                // IF FINISH CURRENT TRANSFER
-                if (transferInfo.isLastMessage()) {
-                    TransferInfo jobTransferDone = transfersPending.remove();
-                    getMessageHandler(messageSent.getData()).onMessageFullySent(jobTransferDone);
-
-                    if (transfersPending.size() == 0) {
-                        return;
-                    }
-                    transferInfo = transfersPending.peek();
-                } else {
-                    transferInfo.increaseIndex();
-                }
-
-                if (!isReceiving) {
-                    continueTransferring(transferInfo);
-                }
+            if (!isReceiving && nextTransfer != null) {
+                continueTransferring(nextTransfer);
             }
         }
 	}
@@ -218,7 +213,7 @@ public class Device extends Entity implements Node, DeviceListener {
 		if (this.networkEnergyManager.onSendData(this, SchedulerProxy.PROXY, messageSize)) { // return true if energy is enough to send the message
             getMessageHandler(transferInfo.getData()).onWillSendMessage(transferInfo);
 
-            NetworkModel.getModel().send(this, SchedulerProxy.PROXY, 1, (int) messageSize, transferInfo.getData(),
+            NetworkModel.getModel().send(this, SchedulerProxy.PROXY, transferInfo.getId(), (int) messageSize, transferInfo.getData(),
                     transferInfo.getCurrentIndex(), transferInfo.isLastMessage());
 		} else {
 		    getMessageHandler(transferInfo.getData()).onCouldNotSendMessage(transferInfo);
@@ -246,44 +241,58 @@ public class Device extends Entity implements Node, DeviceListener {
 	@Override
 	public void processEvent(Event event) {
 		switch (event.getEventType()) {
-		case Device.EVENT_TYPE_BATTERY_UPDATE:
-			int newBatteryLevel = (Integer) event.getData();
-			this.batteryManager.onBatteryEvent(newBatteryLevel);
+            case Device.EVENT_TYPE_BATTERY_UPDATE:
+                int newBatteryLevel = (Integer) event.getData();
+                this.batteryManager.onBatteryEvent(newBatteryLevel);
 
-			if (STATUS_NOTIFICATION_TIME_FREQ == 0
-					&& SchedulerProxy.PROXY.getLastReportedSOC(this) - newBatteryLevel >= BatteryManager.PROFILE_ONE_PERCENT_REPRESENTATION
-					&& newBatteryLevel > 0) {
-				UpdateMsg updateMsg = new UpdateMsg(this.getName(), newBatteryLevel, Simulation.getTime());
-				queueMessageTransfer(SchedulerProxy.PROXY, updateMsg, UpdateMsg.STATUS_MSG_SIZE_IN_BYTES);
-			}
-			break;
-		case Device.EVENT_TYPE_CPU_UPDATE:
-			this.executionManager.onCPUEvent((Double) event.getData());
-			break;
-		case Device.EVENT_TYPE_FINISH_JOB:
-			Job job = (Job) event.getData();
-			this.executionManager.onFinishJob(job);
+                if (STATUS_NOTIFICATION_TIME_FREQ == 0
+                        && SchedulerProxy.PROXY.getLastReportedSOC(this) - newBatteryLevel >= BatteryManager.PROFILE_ONE_PERCENT_REPRESENTATION
+                        && newBatteryLevel > 0) {
+                    UpdateMsg updateMsg = new UpdateMsg(this.getName(), newBatteryLevel, Simulation.getTime());
+                    queueMessageTransfer(SchedulerProxy.PROXY, updateMsg, UpdateMsg.STATUS_MSG_SIZE_IN_BYTES);
+                }
+                break;
+            case Device.EVENT_TYPE_CPU_UPDATE:
+                this.executionManager.onCPUEvent((Double) event.getData());
+                break;
+            case Device.EVENT_TYPE_FINISH_JOB:
+                Job job = (Job) event.getData();
+                this.executionManager.onFinishJob(job);
 
-			queueMessageTransfer(SchedulerProxy.PROXY, job, job.getOutputSize());
-			break;
-		case Device.EVENT_TYPE_DEVICE_START:
-            onStartup();
-			break;
-		case Device.EVENT_TYPE_STATUS_NOTIFICATION:
-			// notify the proxy about my status
-			UpdateMsg updateMsg = new UpdateMsg(this.getName(), (int) batteryManager.getCurrentSOC(),
-                    Simulation.getTime());
-			queueMessageTransfer(SchedulerProxy.PROXY, updateMsg, UpdateMsg.STATUS_MSG_SIZE_IN_BYTES);
+                queueMessageTransfer(SchedulerProxy.PROXY, job, job.getOutputSize());
+                break;
+            case Device.EVENT_TYPE_DEVICE_START:
+                onStartup();
+                break;
+            case Device.EVENT_TYPE_STATUS_NOTIFICATION:
+                // notify the proxy about my status
+                UpdateMsg updateMsg = new UpdateMsg(this.getName(), (int) batteryManager.getCurrentSOC(),
+                        Simulation.getTime());
+                queueMessageTransfer(SchedulerProxy.PROXY, updateMsg, UpdateMsg.STATUS_MSG_SIZE_IN_BYTES);
 
-			// plan the next status notification event
-			if (Device.STATUS_NOTIFICATION_TIME_FREQ > 0){
-				long nextNotificationTime = Simulation.getTime() + Device.STATUS_NOTIFICATION_TIME_FREQ;
-				this.nextStatusNotificationEvent=Event.createEvent(Event.NO_SOURCE, nextNotificationTime,
-                        this.getId(), Device.EVENT_TYPE_STATUS_NOTIFICATION,null);
-				Simulation.addEvent(this.nextStatusNotificationEvent);
-			}
+                // plan the next status notification event
+                if (Device.STATUS_NOTIFICATION_TIME_FREQ > 0){
+                    long nextNotificationTime = Simulation.getTime() + Device.STATUS_NOTIFICATION_TIME_FREQ;
+                    this.nextStatusNotificationEvent=Event.createEvent(Event.NO_SOURCE, nextNotificationTime,
+                            this.getId(), Device.EVENT_TYPE_STATUS_NOTIFICATION,null);
+                    Simulation.addEvent(this.nextStatusNotificationEvent);
+                }
+                break;
+            case Device.EVENT_TYPE_SCREEN_ACTIVITY:
+                Boolean flag = (Boolean) event.getData();
+                this.batteryManager.onUserActivityEvent(flag);
+                break;
+            case Device.EVENT_NETWORK_ACTIVITY:
+                Event.NetworkActivityEventData eventData = (Event.NetworkActivityEventData) event.getData();
+                queueMessageTransfer(CloudNode.getInstance(), null, eventData.getMessageSize(), TransferInfo.PRIORITY_HIGH);
+                // queueMessageTransfer();
+                break;
 		}
 	}
+
+    protected <T> void queueMessageTransfer(Node destination, T data, long payloadSize) {
+	    queueMessageTransfer(destination, data, payloadSize, TransferInfo.PRIORITY_DEFAULT);
+    }
 
     /**
      * Queues a message for transfer to the given recipient. If the communication channel is currently free,
@@ -293,10 +302,12 @@ public class Device extends Entity implements Node, DeviceListener {
      * @param data The message's payload.
      * @param payloadSize The size of the payload in bytes.
      */
-	protected <T> void queueMessageTransfer(Node destination, T data, long payloadSize) {
+	protected <T> void queueMessageTransfer(Node destination, T data, long payloadSize, int priority) {
         long subMessagesCount = (long) Math.ceil(payloadSize / (double) MESSAGES_BUFFER_SIZE);
         int lastMessageSize = (int) (payloadSize - (subMessagesCount - 1) * MESSAGES_BUFFER_SIZE);
         TransferInfo transferInfo = new TransferInfo<>(SchedulerProxy.PROXY, data, subMessagesCount, lastMessageSize);
+        transferInfoMap.put(transferInfo.getId(), transferInfo);
+        transferInfo.setPriority(priority);
         transfersPending.add(transferInfo);
 
         if (transfersPending.size() == 1 && !isReceiving) {
@@ -306,7 +317,7 @@ public class Device extends Entity implements Node, DeviceListener {
 
                 getMessageHandler(data).onWillSendMessage(transferInfo);
 
-                NetworkModel.getModel().send(this, destination, 1, (int) messageSize, data,
+                NetworkModel.getModel().send(this, destination, transferInfo.getId(), messageSize, data,
                         transferInfo.getCurrentIndex(), transferInfo.isLastMessage());
             } else {
                 getMessageHandler(data).onCouldNotSendMessage(transferInfo);
@@ -400,8 +411,8 @@ public class Device extends Entity implements Node, DeviceListener {
         return true;
     }
 
-    public List<TransferInfo> getFinishedJobTransfersCompleted() {
-        return finishedJobTransfersCompleted;
+    public List<Job> getFinishedJobTransfersCompleted() {
+        return finishedJobsCompleted;
     }
 
     public int getCurrentTransfersCount() {
@@ -413,22 +424,12 @@ public class Device extends Entity implements Node, DeviceListener {
     }
 
     public int getCurrentTotalTransferCount() {
-        return getCurrentTransfersCount() + finishedJobTransfersCompleted.size();
+        return getCurrentTransfersCount() + finishedJobsCompleted.size();
     }
 
     public double getAccEnergyInTransferring() {
         return networkEnergyManager.getAccEnergyInTransfering();
     }
-
-    /*
-    public void incrementIncomingJobs() {
-        jobsScheduledByProxy++;
-    }
-
-    public int getJobsScheduledByProxy() {
-        return jobsScheduledByProxy;
-    }
-    */
 
 	/**
 	 * Returns all the jobs assigned to the device.
@@ -565,20 +566,19 @@ public class Device extends Entity implements Node, DeviceListener {
         }
 
         @Override
-        public void onMessageSentAck(TransferInfo<Job> transferInfo) {
-            int index = transferInfo.getCurrentIndex() + 1;
-            Logger.logEntity2(Device.this, "Success Transfer (" + index + "/" +
-                    transferInfo.getMessagesCount() + ")", "jobId=" + transferInfo.getData().getJobId());
+        public void onMessageSentAck(Message<Job> message) {
+            int index = message.getOffset() + 1;
+            Logger.logEntity2(Device.this, "Success Transfer (" + index + ")", "jobId=" + message.getData().getJobId());
         }
 
         @Override
-        public void onMessageFullySent(TransferInfo<Job> transferInfo) {
-            Job job = transferInfo.getData();
+        public void onMessageFullySent(Message<Job> message) {
+            Job job = message.getData();
             Logger.logEntity(Device.this, "Result completely transferred; jobId=", job.getJobId());
             JobStatsUtils.successTransferBack(job);
             Device.this.incomingJobTransfers.remove(job.getJobId());
 
-            finishedJobTransfersCompleted.add(transferInfo);
+            finishedJobsCompleted.add(message.getData());
         }
 
         @Override

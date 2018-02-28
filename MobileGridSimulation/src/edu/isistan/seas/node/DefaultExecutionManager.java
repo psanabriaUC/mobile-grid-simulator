@@ -21,8 +21,9 @@ import edu.isistan.simulator.Simulation;
  *
  */
 public class DefaultExecutionManager implements ExecutionManager {
-	private static final int PROFILE_CPU_IDLE = 0;
-	private static final int PROFILE_CPU_FULL = 1;
+	public static final int PROFILE_CPU_IDLE = 0;
+    public static final int PROFILE_CPU_FULL = 1;
+    public static final int PROFILE_CPU_FULL_SCREEN_ON = 2;
 	private static final long NO_OPS = 0l;
 
     /**

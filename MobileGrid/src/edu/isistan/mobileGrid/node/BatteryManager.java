@@ -25,6 +25,14 @@ public interface BatteryManager {
 	 * @param level
 	 */
 	public void onBatteryEvent(int level);
+
+    /**
+     * Called whenever the device's screen comes on or off.
+     *
+     * @param flag true if the device's screen is being turned on, false if it is being turned off.
+     */
+	void onUserActivityEvent(boolean flag);
+
 	/**
 	 * Get current battery level
 	 * @return

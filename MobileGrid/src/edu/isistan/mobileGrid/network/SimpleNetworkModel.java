@@ -63,7 +63,7 @@ public class SimpleNetworkModel extends NetworkModel {
 
 	private Link getLink(Node scr, Node dst) {
 		Link result = this.defaultLink;
-		Map<Node,Link> map = this.links.get(scr);
+		Map<Node, Link> map = this.links.get(scr);
 		if(map != null && map.containsKey(dst)) {
 			result = map.get(dst);
 		}

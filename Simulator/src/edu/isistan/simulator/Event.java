@@ -144,5 +144,26 @@ public class Event implements Comparable<Event>{
 	void modifyTime(long newTime){
 	    time = newTime;
 	}
+
+    /**
+     * Data for the NetworkActivity event.
+     */
+	public static class NetworkActivityEventData {
+		private int messageSize;
+		private boolean incoming;
+
+		public NetworkActivityEventData(int messageSize, boolean incoming) {
+			this.messageSize = messageSize;
+			this.incoming = incoming;
+		}
+
+		public int getMessageSize() {
+			return messageSize;
+		}
+
+		public boolean isMessageIncoming() {
+			return incoming;
+		}
+	}
 	
 }

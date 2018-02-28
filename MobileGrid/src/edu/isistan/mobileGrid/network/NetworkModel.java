@@ -12,7 +12,6 @@ import edu.isistan.simulator.Simulation;
  * This class is in charge of relaying messages from one entity to another and simulating their links.
  */
 public abstract class NetworkModel {
-		
 	private static final String NETWORK_ENTITY_NAME = "network";
 	private static double AckMessageSizeInBytes = 0; //2346; //http://stackoverflow.com/questions/5543326/what-is-the-total-length-of-pure-tcp-ack-sent-over-ethernet
 
@@ -62,7 +61,6 @@ public abstract class NetworkModel {
 	}
 
 	public abstract long getTransmissionTime(Node scr, Node dst, int messageSize);
-
 
     /**
      * Sends a message through the network.

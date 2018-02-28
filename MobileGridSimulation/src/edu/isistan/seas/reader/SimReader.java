@@ -78,31 +78,36 @@ public class SimReader {
 					this.loadScheduler();
 				else if (line.startsWith(";GAConfiguration"))
 					this.loadGAConfiguration();
-				else if(line.startsWith(";comparator"))
+				else if (line.startsWith(";comparator"))
 					this.loadComparator();
-				else if(line.startsWith(";policy"))
+				else if (line.startsWith(";policy"))
 					this.loadPolicy();
-				else if(line.startsWith(";strategy"))
+				else if (line.startsWith(";strategy"))
 					this.loadStragegy();
-				else if(line.startsWith(";condition"))
+				else if (line.startsWith(";condition"))
 					this.loadCondition();
-				else if(line.startsWith(";link"))
+				else if (line.startsWith(";link"))
 					this.loadLink();
-				else if(line.startsWith(";networkEnergyManagementEnable"))
+				else if (line.startsWith(";networkEnergyManagementEnable"))
 					this.loadNetworkEnergyManagementFlag();
-				else if(line.startsWith(";devicesStatusNotification"))
+				else if (line.startsWith(";devicesStatusNotification"))
 					this.loadDeviceStatusNotificationPolicy();
-				else if(line.startsWith(";nodeFile"))
+				else if (line.startsWith(";nodeFile"))
 					this.loadNodes();
-				else if(line.startsWith(";batteryFile"))
+				else if (line.startsWith(";batteryFile"))
 					this.loadBatteryFile();
-				else if(line.startsWith(";batteryFullCpuUsageFile"))
+				else if (line.startsWith(";batteryFullCpuUsageFile"))
 					this.loadFullBatteryFile();
-				else if(line.startsWith(";cpuFile"))
+				else if (line.startsWith(";cpuFile"))
 					this.loadCPUFile();
-				else if(line.startsWith(";wifiSignalStrength"))
+				else if (line.startsWith(";wifiSignalStrength"))
 					this.loadWifiSignalStrength();
-				else if(line.startsWith(";jobsEvent"))
+				else if (line.startsWith(";userActivity"))
+					this.loadUserActivity();
+				else if (line.startsWith(";networkActivity")) {
+				    this.loadNetworkActivity();
+                }
+				else if (line.startsWith(";jobsEvent"))
                     executorService.execute(this.loadJobs());
 				else throw new IllegalStateException(this.line+" is not a valid parameter");
 			}
@@ -125,8 +130,8 @@ public class SimReader {
 		session.commit();
 		session.close();		
 	}
-	
-	private void loadDeviceStatusNotificationPolicy() throws Exception {
+
+    private void loadDeviceStatusNotificationPolicy() throws Exception {
 		//parse status notification policy
 		this.nextLine();
 		String[] statusNotificationPolicyParams = this.line.split(" "); 
@@ -307,6 +312,40 @@ public class SimReader {
 			this.nextLine();
 		}
 	}
+
+    private void loadUserActivity() throws IOException {
+        this.nextLine();
+
+        while(!this.line.startsWith(";")) {
+            StringTokenizer st = new StringTokenizer(line, ";");
+            String userActivityFile = st.nextToken();
+            String nodeId = st.nextToken().trim();
+
+            DeviceLoader loader=this.devices.get(nodeId);
+            if(loader == null)
+                System.err.println("There is no such device " + nodeId);
+            loader.setUserActivityFilePath(userActivityFile);
+
+            this.nextLine();
+        }
+    }
+
+    private void loadNetworkActivity() throws IOException {
+        this.nextLine();
+
+        while(!this.line.startsWith(";")) {
+            StringTokenizer st = new StringTokenizer(line, ";");
+            String networkActivityFile = st.nextToken();
+            String nodeId = st.nextToken().trim();
+
+            DeviceLoader loader=this.devices.get(nodeId);
+            if(loader == null)
+                System.err.println("There is no such device " + nodeId);
+            loader.setNetworkActivityFilePath(networkActivityFile);
+
+            this.nextLine();
+        }
+    }
 
 	private Thread loadJobs() throws IOException {
 		this.nextLine();

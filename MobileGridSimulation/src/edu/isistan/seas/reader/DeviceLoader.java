@@ -7,6 +7,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Scanner;
 import java.util.StringTokenizer;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -37,19 +38,33 @@ public class DeviceLoader extends Thread {
 
 	@SuppressWarnings("unused")
 	private int maxActiveJobs;
+
     /**
      * The name of the file containing this device's base battery profile for energy consumption estimations.
      */
 	private String batteryBaseFile;
+
     /**
      * The name of the file containing this device's full cpu battery profile for energy consumption estimations.
      */
     private String batteryFullFile;
+
     /**
      * The name of the file containing the device's cpu trace. It defines the <b>real</b> cpu percentage use when in
      * the relevant states for this simulation (i.e. when idle, cpu usage is actually around ~10%).
      */
     private String cpuFile;
+
+	/**
+	 * The name of the file containing the device's user activity (when the screen is turned ON and OFF).
+	 */
+	private String userActivityFilePath;
+
+    /**
+     * The name of the file containing the device's network activity stemming from user activity and the app environment.
+     */
+	private String networkActivityFilePath;
+
     /**
      * Flag to enable or disable energy consumption simulation due to network related tasks (e.g. data transfers).
      */
@@ -122,57 +137,6 @@ public class DeviceLoader extends Thread {
 		this.setBatteryCapacityInJoules(batteryCapacityInJoules);
 	}
 
-	// Getters and setters.
-
-    public String getBatteryFile() {
-        return batteryBaseFile;
-    }
-
-    public void setBatteryFile(String batteryFile) throws FileNotFoundException {
-        this.batteryBaseFile = batteryFile;
-        if (!new File(this.batteryBaseFile).exists()) {
-            throw new FileNotFoundException();
-        }
-    }
-
-    public String getCPUFile() {
-        return cpuFile;
-    }
-
-    public void setCPUFile(String cpuFile) throws FileNotFoundException {
-        this.cpuFile = cpuFile;
-        if (!new File(this.cpuFile).exists()) {
-            throw new FileNotFoundException();
-        }
-    }
-
-    public String getFullBatteryFile() {
-        return batteryFullFile;
-    }
-
-    public void setFullBatteryFile(String fullBatteryFile) throws FileNotFoundException {
-        this.batteryFullFile = fullBatteryFile;
-        if (!new File(this.batteryFullFile).exists()) {
-            throw new FileNotFoundException();
-        }
-    }
-
-    public void setSimLock(ReentrantLock simLock) {
-        this.simLock = simLock;
-    }
-
-    public void setWifiSignalStrength(short wifiSignalStrength) {
-        this.wifiSignalStrength = wifiSignalStrength;
-    }
-
-	public long getBatteryCapacityInJoules() {
-		return batteryCapacityInJoules;
-	}
-
-	public void setBatteryCapacityInJoules(long batteryCapacityInJoules) {
-		this.batteryCapacityInJoules = batteryCapacityInJoules;
-	}
-
 	/**
 	 * File format battery
 	 * time;charge*
@@ -214,6 +178,9 @@ public class DeviceLoader extends Thread {
 		batteryManager.setSEASExecutionManager(executionManager);
 						
 		this.readCPUEvents();
+
+		this.readUserActivityEvents();
+		this.readNetworkActivityEvents();
 
 		Event event = Event.createEvent(Event.NO_SOURCE, this.startTime, this.deviceId, Device.EVENT_TYPE_DEVICE_START, null);
 
@@ -336,4 +303,133 @@ public class DeviceLoader extends Thread {
 
 		return profileData;
 	}
+
+	private void readUserActivityEvents() {
+	    if (userActivityFilePath != null) {
+	        File file = new File(userActivityFilePath);
+
+            Scanner scanner = null;
+            try {
+                scanner = new Scanner(file);
+                while (scanner.hasNext()) {
+                    String line = scanner.nextLine().trim();
+                    if (line.indexOf("#") == 0 || line.length() == 0) continue;
+
+                    String[] values = line.split(";");
+                    long time = Long.parseLong(values[0]);
+                    String flag = values[1];
+                    Boolean activity = flag.equals("ON");
+
+                    Event event = Event.createEvent(Event.NO_SOURCE, time, this.deviceId, Device.EVENT_TYPE_SCREEN_ACTIVITY, activity);
+
+                    this.simLock.lock();
+                    Simulation.addEvent(event);
+                    this.simLock.unlock();
+
+                }
+            } catch (FileNotFoundException e) {
+                e.printStackTrace();
+                System.exit(1);
+            } finally {
+                if (scanner != null) {
+                    scanner.close();
+                }
+            }
+        }
+    }
+
+    private void readNetworkActivityEvents() {
+        if (networkActivityFilePath != null) {
+            File file = new File(networkActivityFilePath);
+
+            Scanner scanner = null;
+            try {
+                scanner = new Scanner(file);
+                while (scanner.hasNext()) {
+                    String line = scanner.nextLine().trim();
+                    if (line.indexOf("#") == 0 || line.length() == 0) continue;
+
+                    String[] values = line.split(";");
+                    long time = Long.parseLong(values[0]);
+                    int messageSize = Integer.parseInt(values[1]);
+                    String flag = values[2];
+
+                    Event.NetworkActivityEventData eventData = new Event.NetworkActivityEventData(messageSize, flag.equals("IN"));
+
+                    Event event = Event.createEvent(Event.NO_SOURCE, time, this.deviceId, Device.EVENT_NETWORK_ACTIVITY, eventData);
+
+                    this.simLock.lock();
+                    Simulation.addEvent(event);
+                    this.simLock.unlock();
+
+                }
+            } catch (FileNotFoundException e) {
+                e.printStackTrace();
+                System.exit(1);
+            } finally {
+                if (scanner != null) {
+                    scanner.close();
+                }
+            }
+        }
+    }
+
+    // Getters and setters.
+
+    public String getBatteryFile() {
+        return batteryBaseFile;
+    }
+
+    public void setBatteryFile(String batteryFile) throws FileNotFoundException {
+        this.batteryBaseFile = batteryFile;
+        if (!new File(this.batteryBaseFile).exists()) {
+            throw new FileNotFoundException();
+        }
+    }
+
+    public String getCPUFile() {
+        return cpuFile;
+    }
+
+    public void setCPUFile(String cpuFile) throws FileNotFoundException {
+        this.cpuFile = cpuFile;
+        if (!new File(this.cpuFile).exists()) {
+            throw new FileNotFoundException();
+        }
+    }
+
+    public String getFullBatteryFile() {
+        return batteryFullFile;
+    }
+
+    public void setFullBatteryFile(String fullBatteryFile) throws FileNotFoundException {
+        this.batteryFullFile = fullBatteryFile;
+        if (!new File(this.batteryFullFile).exists()) {
+            throw new FileNotFoundException();
+        }
+    }
+
+    public void setUserActivityFilePath(String userActivityFile) {
+        this.userActivityFilePath = userActivityFile;
+    }
+
+    public void setNetworkActivityFilePath(String networkActivityFilePath) {
+        this.networkActivityFilePath = networkActivityFilePath;
+    }
+
+    public void setSimLock(ReentrantLock simLock) {
+        this.simLock = simLock;
+    }
+
+    public void setWifiSignalStrength(short wifiSignalStrength) {
+        this.wifiSignalStrength = wifiSignalStrength;
+    }
+
+    public long getBatteryCapacityInJoules() {
+        return batteryCapacityInJoules;
+    }
+
+    public void setBatteryCapacityInJoules(long batteryCapacityInJoules) {
+        this.batteryCapacityInJoules = batteryCapacityInJoules;
+    }
 }

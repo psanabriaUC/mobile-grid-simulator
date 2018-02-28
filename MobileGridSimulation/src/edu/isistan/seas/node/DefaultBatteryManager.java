@@ -157,7 +157,7 @@ public class DefaultBatteryManager implements BatteryManager {
 			//discomment for debugging
 			//Logger.appendDebugInfo(this.device.getName()+";NET;"+this.lastMeasurement+";"+this.lastCharge);
 					
-			if (this.lastCharge<=0){
+			if (this.lastCharge <= 0){
 				this.device.onBatteryDepletion();
 				return;
 			}
@@ -191,7 +191,7 @@ public class DefaultBatteryManager implements BatteryManager {
 
 	@Override
 	public void onBatteryEvent(int level) {
-		if(level <= 0){
+		if(level <= 0) {
 			lastCharge = 0;
 			this.lastMeasurement = Simulation.getTime();
 			this.device.onBatteryDepletion();
@@ -206,7 +206,7 @@ public class DefaultBatteryManager implements BatteryManager {
 		//Logger.appendDebugInfo(this.device.getName()+";BAT;"+this.lastMeasurement+";"+this.lastCharge+";"+lastAddedEvent.getEventId()+"\n");
 		
 		this.moveToNext(this.lastCharge, this.currentProfile);
-		double nextEventCharge=this.profiles[this.currentProfile].first().getToCharge();
+		double nextEventCharge = this.profiles[this.currentProfile].first().getToCharge();
 		
 		 // Commented by Matias: The current and the next state of charge are joint with a line whose equation is
 		 // (y - b) / a = x, where y is the next state of charge, b is the current charge and a is the slope of
@@ -216,10 +216,23 @@ public class DefaultBatteryManager implements BatteryManager {
 		double nTime = this.lastMeasurement + (nextEventCharge - this.lastCharge) / this.profiles[this.currentProfile].first().getSlope();
 		
 		if(nTime < this.lastMeasurement)
-			throw new IllegalStateException("Next event time is previous ("+nTime+") to current time ("+this.lastMeasurement+")");
-		this.lastAddedEvent = Event.createEvent(Event.NO_SOURCE, (long) nTime, this.device.getId(), Device.EVENT_TYPE_BATTERY_UPDATE, this.profiles[this.currentProfile].first().getToCharge());
+			throw new IllegalStateException("Next event time is previous (" + nTime + ") to current time (" + this.lastMeasurement + ")");
+		this.lastAddedEvent = Event.createEvent(Event.NO_SOURCE, (long) nTime, this.device.getId(),
+                Device.EVENT_TYPE_BATTERY_UPDATE, this.profiles[this.currentProfile].first().getToCharge());
 		Simulation.addEvent(this.lastAddedEvent);
 		this.updateEstimatedUptime();
+	}
+
+	@Override
+	public void onUserActivityEvent(boolean screenOn) {
+	    // TODO: Uncomment
+	    /*
+	    if (screenOn) {
+	        this.onCPUProfileChange(DefaultExecutionManager.PROFILE_CPU_FULL_SCREEN_ON);
+        } else if (this.currentProfile == DefaultExecutionManager.PROFILE_CPU_FULL_SCREEN_ON) {
+	        this.onCPUProfileChange(DefaultExecutionManager.PROFILE_CPU_FULL);
+        }
+        */
 	}
 
 	@Override
@@ -287,7 +300,7 @@ public class DefaultBatteryManager implements BatteryManager {
 
     @Override
     public long getEstimatedUptime() {
-        return (long) (this.estimatedUpTime + this.startTime-Simulation.getTime());
+        return (long) (this.estimatedUpTime + this.startTime - Simulation.getTime());
     }
 
     public long getBatteryCapacityInJoules() {
