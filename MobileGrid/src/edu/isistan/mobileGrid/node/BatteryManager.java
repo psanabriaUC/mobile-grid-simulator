@@ -10,12 +10,16 @@ public interface BatteryManager {
 	/**This represents the minimum difference between two consecutive SOC battery samples of a profile*/
 	public static int PROFILE_STEP_REPRESENTATION = 1000;
 
-	/**
-	 * It is called when the CPU profile changes
-	 *
-	 * @param profile The index of the profile to switch over to.
-	 */
-	public void onCPUProfileChange(int profile);
+    /**
+     * Called when the device starts running a series of jobs.
+     */
+	void onBeginExecutingJobs();
+
+    /**
+     * Called when a job is finished and no more jobs are available in the queue.
+     */
+	void onStopExecutingJobs();
+
 	/**
 	 * It is called when the network usage make the battery level decreased in a predefined percentage  
 	 */

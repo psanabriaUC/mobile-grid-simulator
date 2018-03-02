@@ -97,7 +97,9 @@ public class SimReader {
 				else if (line.startsWith(";batteryFile"))
 					this.loadBatteryFile();
 				else if (line.startsWith(";batteryFullCpuUsageFile"))
-					this.loadFullBatteryFile();
+					this.loadCpuFullScreenOffBatteryFile();
+				else if (line.startsWith(";batteruFullCpuScreenOnFile"))
+					this.loadCpuFullScreenOnBatteryFile();
 				else if (line.startsWith(";cpuFile"))
 					this.loadCPUFile();
 				else if (line.startsWith(";wifiSignalStrength"))
@@ -131,7 +133,8 @@ public class SimReader {
 		session.close();		
 	}
 
-    private void loadDeviceStatusNotificationPolicy() throws Exception {
+
+	private void loadDeviceStatusNotificationPolicy() throws Exception {
 		//parse status notification policy
 		this.nextLine();
 		String[] statusNotificationPolicyParams = this.line.split(" "); 
@@ -278,7 +281,7 @@ public class SimReader {
 		}
 	}
 
-	private void loadFullBatteryFile() throws IOException {
+	private void loadCpuFullScreenOffBatteryFile() throws IOException {
 		this.nextLine();
 		while(!this.line.startsWith(";")) {
 			StringTokenizer st = new StringTokenizer(line, ";");
@@ -287,10 +290,24 @@ public class SimReader {
 			DeviceLoader loader=this.devices.get(nodeId);
 			if(loader==null)
 				System.err.println("There is no such device "+nodeId);
-			loader.setFullBatteryFile(batFile);
+			loader.setBatteryCpuFullScreenOffFile(batFile);
 			this.nextLine();
 		}
 	}
+
+    private void loadCpuFullScreenOnBatteryFile() throws IOException {
+        this.nextLine();
+        while(!this.line.startsWith(";")) {
+            StringTokenizer st = new StringTokenizer(line, ";");
+            String batFile = st.nextToken();
+            String nodeId = st.nextToken().trim();
+            DeviceLoader loader=this.devices.get(nodeId);
+            if(loader==null)
+                System.err.println("There is no such device "+nodeId);
+            loader.setBatteryCpuFullScreenOnFile(batFile);
+            this.nextLine();
+        }
+    }
 
 	private void loadBatteryFile() throws IOException {
 		this.nextLine();		

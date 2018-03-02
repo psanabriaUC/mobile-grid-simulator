@@ -21,9 +21,7 @@ import edu.isistan.simulator.Simulation;
  *
  */
 public class DefaultExecutionManager implements ExecutionManager {
-	public static final int PROFILE_CPU_IDLE = 0;
-    public static final int PROFILE_CPU_FULL = 1;
-    public static final int PROFILE_CPU_FULL_SCREEN_ON = 2;
+
 	private static final long NO_OPS = 0l;
 
     /**
@@ -92,9 +90,9 @@ public class DefaultExecutionManager implements ExecutionManager {
 		this.pendingJobs.add(job);
 		this.startExecute();
 		if (isExecuting()) {
-			this.batteryManager.onCPUProfileChange(PROFILE_CPU_FULL);
+			this.batteryManager.onBeginExecutingJobs();
 		} else {
-			this.batteryManager.onCPUProfileChange(PROFILE_CPU_IDLE);
+			this.batteryManager.onStopExecutingJobs();
 		}
 
 	}
@@ -126,9 +124,10 @@ public class DefaultExecutionManager implements ExecutionManager {
 		// Execute new job		 
 		this.startExecute();
 		if (isExecuting()) {
-			this.batteryManager.onCPUProfileChange(PROFILE_CPU_FULL);
+			// TODO: check if maybe we can eliminate this line.
+			this.batteryManager.onBeginExecutingJobs();
 		} else {
-			this.batteryManager.onCPUProfileChange(PROFILE_CPU_IDLE);
+			this.batteryManager.onStopExecutingJobs();
 			Logger.logEntity(device, "The device has become lazy");
 		}
 		

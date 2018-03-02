@@ -45,9 +45,16 @@ public class DeviceLoader extends Thread {
 	private String batteryBaseFile;
 
     /**
-     * The name of the file containing this device's full cpu battery profile for energy consumption estimations.
+     * The name of the file containing this device's battery profile for 100% CPU utilization and the screen turned off.
+     * Used for energy consumption estimations.
      */
-    private String batteryFullFile;
+    private String batteryFullScreenOffFile;
+
+	/**
+	 * The name of the file containing this device's battery profile for 100% CPU utilization and the screen turned on.
+     * Used for energy consumption estimations.
+	 */
+	private String batteryFullScreenOnFile;
 
     /**
      * The name of the file containing the device's cpu trace. It defines the <b>real</b> cpu percentage use when in
@@ -147,16 +154,22 @@ public class DeviceLoader extends Thread {
 	@Override
 	public void run() {
 		List<ProfileData> batteryBaseProfileData = this.readBattery(this.batteryBaseFile);
-		List<ProfileData> batteryFullProfileData = this.readBattery(this.batteryFullFile);
+		List<ProfileData> batteryFullScreenOffProfileData = this.readBattery(this.batteryFullScreenOffFile);
+		// TODO: uncomment
+        // List<ProfileData> batteryFullScreenOnProfileData = this.readBattery(this.batteryFullScreenOffFile);
 		
 		DefaultNetworkEnergyManager networkEnergyManager = MANAGER_FACTORY.createNetworkEnergyManager(networkEnergyManagerEnable, wifiSignalStrength);
-		DefaultBatteryManager batteryManager = MANAGER_FACTORY.createBatteryManager(2, startCharge, startUptime, batteryCapacityInJoules);
+		DefaultBatteryManager batteryManager = MANAGER_FACTORY.createBatteryManager(3, startCharge, startUptime, batteryCapacityInJoules);
 
 		for(ProfileData data: batteryBaseProfileData)
 			batteryManager.addProfileData(0, data);
 
-		for(ProfileData data: batteryFullProfileData)
+		for(ProfileData data: batteryFullScreenOffProfileData)
 			batteryManager.addProfileData(1, data);
+
+		// TODO: placeholder, remove once we have profiles for CPU 100% and screen on.
+        for(ProfileData data: batteryFullScreenOffProfileData)
+            batteryManager.addProfileData(2, data);
 		
 		DefaultExecutionManager executionManager = MANAGER_FACTORY.createExecutionManager();
 		executionManager.setMips(this.flops);
@@ -399,14 +412,18 @@ public class DeviceLoader extends Thread {
     }
 
     public String getFullBatteryFile() {
-        return batteryFullFile;
+        return batteryFullScreenOffFile;
     }
 
-    public void setFullBatteryFile(String fullBatteryFile) throws FileNotFoundException {
-        this.batteryFullFile = fullBatteryFile;
-        if (!new File(this.batteryFullFile).exists()) {
+    public void setBatteryCpuFullScreenOffFile(String fullBatteryFile) throws FileNotFoundException {
+        this.batteryFullScreenOffFile = fullBatteryFile;
+        if (!new File(this.batteryFullScreenOffFile).exists()) {
             throw new FileNotFoundException();
         }
+    }
+
+    public void setBatteryCpuFullScreenOnFile(String batteryFullScreenOnFile) {
+        this.batteryFullScreenOnFile = batteryFullScreenOnFile;
     }
 
     public void setUserActivityFilePath(String userActivityFile) {

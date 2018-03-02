@@ -17,6 +17,9 @@ import edu.isistan.simulator.Simulation;
  *
  */
 public class DefaultBatteryManager implements BatteryManager {
+    private static final int PROFILE_CPU_USER = 0;
+    private static final int PROFILE_CPU_FULL_SCREEN_OFF = 1;
+    private static final int PROFILE_CPU_FULL_SCREEN_ON = 2;
 	
 	private Device device;
 	//hay que inicializarlos con un valor al principio
@@ -78,10 +81,20 @@ public class DefaultBatteryManager implements BatteryManager {
 	private DefaultExecutionManager executionManager;
 
     /**
+     * Flag indicating if the device is currently running jobs.
+     */
+	private boolean runningJobs;
+
+    /**
+     * Flag indicating the current status of the device's screen.
+     */
+	private boolean screenOn;
+
+    /**
      * Builds a standard battery manager with default capabilities to emulate battery discharges when idle, executing
      * CPU intensive jobs, and transferring data over a network.
      *
-     * @param prof Number of trace data sets to emulate battery discharges under different workloads.
+     * @param prof Number of trace data sets to emulate battery discharge under different workloads.
      * @param charge Initial state of charge of the device's battery (0 - 1000000).
      * @param estUptime Estimated time until discharge in milliseconds.
      * @param batteryCapacityInJoules Battery capacity in Joules.
@@ -95,8 +108,10 @@ public class DefaultBatteryManager implements BatteryManager {
 		this.lastReportedCharge = charge;
 		this.estimatedUpTime = estUptime;
 		this.profiles = (SortedSet<ProfileData>[]) new SortedSet[prof];
-		for(int i = 0; i < prof; i++)
-			this.profiles[i] = new TreeSet<>(new NegativeComparator<ProfileData>());
+		for(int i = 0; i < prof; i++) {
+            this.profiles[i] = new TreeSet<>(new NegativeComparator<ProfileData>());
+        }
+        this.currentProfile = PROFILE_CPU_USER;
 	}
 	/**
 	 * This method is executed when a job start to execute
@@ -105,12 +120,11 @@ public class DefaultBatteryManager implements BatteryManager {
      *
      * @param profile The index of the profile to switch over to.
 	 */
-	@Override
-	public void onCPUProfileChange(int profile) {
+	private void onCPUProfileChange(int profile) {
 		if (this.currentProfile == profile) return;
 		double lTime = this.lastMeasurement;
 		double now = Simulation.getTime();
-		//Calculates new charge
+		// Calculates new charge
 		double slope = this.profiles[this.currentProfile].first().getSlope();
 		double newCharge = this.lastCharge + (now - lTime) * slope;
 		
@@ -122,18 +136,18 @@ public class DefaultBatteryManager implements BatteryManager {
 			this.device.onBatteryDepletion();
 			return;
 		}
-		//Calculates new event time
+		// Calculates new event time
 		double nextChargeEvent	= this.moveToNext(newCharge, profile);
 		
 		double nEventTime = now + (nextChargeEvent - newCharge) / this.profiles[profile].first().getSlope();
-		//Update values and checks validity
+		// Update values and checks validity
 		this.currentProfile = profile;
 		
 		this.lastCharge = newCharge;
 		this.lastMeasurement = Simulation.getTime();
 		
-		//discomment for debugging
-		//Logger.appendDebugInfo(this.device.getName()+";PRO;"+this.lastMeasurement+";"+(double)this.lastCharge+";"+lastAddedEvent.getEventId()+"\n");
+		// uncomment for debugging
+		// Logger.appendDebugInfo(this.device.getName()+";PRO;"+this.lastMeasurement+";"+(double)this.lastCharge+";"+lastAddedEvent.getEventId()+"\n");
 		
 		if(this.lastMeasurement > nEventTime) {
 		    throw new IllegalStateException("Next event time is previous (" + nEventTime + ") to current time (" + this.lastMeasurement + ")");
@@ -147,15 +161,15 @@ public class DefaultBatteryManager implements BatteryManager {
 
 	@Override
 	public void onNetworkEnergyConsumption(double decreasingPercentageValue) {
-			//Logger.logEnergy( "onNetworkEnergyConsumption","decreasingPercentageValue="+decreasingPercentageValue);
+			// Logger.logEnergy( "onNetworkEnergyConsumption","decreasingPercentageValue="+decreasingPercentageValue);
 			
 			double slope = this.profiles[this.currentProfile].first().getSlope();
 			this.lastCharge = this.lastCharge + (Simulation.getTime() - this.lastMeasurement) * slope;
 			
 			this.lastCharge -= decreasingPercentageValue;
 			this.lastMeasurement = Simulation.getTime(); 
-			//discomment for debugging
-			//Logger.appendDebugInfo(this.device.getName()+";NET;"+this.lastMeasurement+";"+this.lastCharge);
+			// uncomment for debugging
+			// Logger.appendDebugInfo(this.device.getName()+";NET;"+this.lastMeasurement+";"+this.lastCharge);
 					
 			if (this.lastCharge <= 0){
 				this.device.onBatteryDepletion();
@@ -171,11 +185,11 @@ public class DefaultBatteryManager implements BatteryManager {
                 throw new IllegalStateException("Next event time is previous (" + newTime + ") to current time (" + this.lastMeasurement + ")");
             }
 						
-			//with the energy consumption introduced by network, the lastAddedEvent is out of date.
-			//There are two possible update operations. One involves get a new sample from the
-			//current profile and calculate the time when this battery level will take place while the other
-			//involves only the last operation. Both update operations needs that lastAddedEvent be removed and
-			//added to the simulation events queue in order to be inserted in the correct place.
+			// with the energy consumption introduced by network, the lastAddedEvent is out of date.
+			// There are two possible update operations. One involves get a new sample from the
+			// current profile and calculate the time when this battery level will take place while the other
+			// involves only the last operation. Both update operations needs that lastAddedEvent be removed and
+			// added to the simulation events queue in order to be inserted in the correct place.
 			if (!skippedSample) {
                 Simulation.updateEventTime(lastAddedEvent, (long) newTime);
             } else {
@@ -202,8 +216,8 @@ public class DefaultBatteryManager implements BatteryManager {
 		this.lastMeasurement = Simulation.getTime();
 		this.reportedCharge = level;
 		
-		//discomment for debugging
-		//Logger.appendDebugInfo(this.device.getName()+";BAT;"+this.lastMeasurement+";"+this.lastCharge+";"+lastAddedEvent.getEventId()+"\n");
+		// uncomment for debugging
+		// Logger.appendDebugInfo(this.device.getName()+";BAT;"+this.lastMeasurement+";"+this.lastCharge+";"+lastAddedEvent.getEventId()+"\n");
 		
 		this.moveToNext(this.lastCharge, this.currentProfile);
 		double nextEventCharge = this.profiles[this.currentProfile].first().getToCharge();
@@ -225,17 +239,36 @@ public class DefaultBatteryManager implements BatteryManager {
 
 	@Override
 	public void onUserActivityEvent(boolean screenOn) {
-	    // TODO: Uncomment
-	    /*
-	    if (screenOn) {
-	        this.onCPUProfileChange(DefaultExecutionManager.PROFILE_CPU_FULL_SCREEN_ON);
-        } else if (this.currentProfile == DefaultExecutionManager.PROFILE_CPU_FULL_SCREEN_ON) {
-	        this.onCPUProfileChange(DefaultExecutionManager.PROFILE_CPU_FULL);
+	    this.screenOn = screenOn;
+
+	    if (screenOn && runningJobs) {
+	        onCPUProfileChange(PROFILE_CPU_FULL_SCREEN_ON);
+        } else if (!screenOn && runningJobs) {
+	        onCPUProfileChange(PROFILE_CPU_FULL_SCREEN_OFF);
+        } else {
+	        onCPUProfileChange(PROFILE_CPU_USER);
         }
-        */
 	}
 
-	@Override
+    @Override
+    public void onBeginExecutingJobs() {
+	    this.runningJobs = true;
+
+	    if (screenOn) {
+            onCPUProfileChange(PROFILE_CPU_FULL_SCREEN_ON);
+        } else {
+            onCPUProfileChange(PROFILE_CPU_FULL_SCREEN_OFF);
+        }
+    }
+
+    @Override
+    public void onStopExecutingJobs() {
+        this.runningJobs = false;
+
+        onCPUProfileChange(PROFILE_CPU_USER);
+    }
+
+    @Override
 	public void startWorking() {
 		this.lastMeasurement = Simulation.getTime();
 		this.lastEventTime = Simulation.getTime();
