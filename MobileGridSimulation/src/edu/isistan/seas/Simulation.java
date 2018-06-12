@@ -5,14 +5,16 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
+import edu.isistan.mobileGrid.jobs.Job;
 import edu.isistan.mobileGrid.jobs.JobStatsUtils;
 import edu.isistan.mobileGrid.network.NetworkModel;
 import edu.isistan.mobileGrid.network.Node;
 import edu.isistan.mobileGrid.network.SimpleNetworkModel;
 import edu.isistan.mobileGrid.network.WifiLink;
+import edu.isistan.mobileGrid.node.CloudNode;
 import edu.isistan.mobileGrid.node.Device;
-import edu.isistan.mobileGrid.node.InputTransferInfo;
 import edu.isistan.mobileGrid.node.SchedulerProxy;
+import edu.isistan.mobileGrid.node.TransferInfo;
 import edu.isistan.mobileGrid.persistence.IPersisterFactory;
 import edu.isistan.mobileGrid.persistence.DBEntity.DeviceTuple;
 import edu.isistan.mobileGrid.persistence.DBEntity.JobStatsTuple;
@@ -27,6 +29,7 @@ public class Simulation {
 	 * @param args
 	 */
 	public static void main(String[] args) {
+
 		if(args.length==3){
 			Object o=new Object();
 			System.err.println("Waiting for 10 sec");
@@ -64,23 +67,26 @@ public class Simulation {
 		
 		
 		boolean storeInDB=false;
-		if (args.length==2) storeInDB = Boolean.parseBoolean(args[1]);
+		if (args.length == 2) storeInDB = Boolean.parseBoolean(args[1]);
+
+		SimReader simReader = new SimReader();
 		
-		SimReader sr=new SimReader();
-		
-		sr.read(args[0], storeInDB);
+		simReader.read(args[0], storeInDB);
 		JobStatsUtils.setSim_id(SimReader.getSim_id());
 		
 		String cnfPath = args[0];
-		String [] cnfPathArr = cnfPath.split("/");
+		String[] cnfPathArr = cnfPath.split("/");
 		cnfPath = cnfPathArr[cnfPathArr.length-1];
 		cnfPathArr = cnfPath.split("-");
 		cnfPath = cnfPathArr[0];
 		Logger.EXPERIMENT = cnfPath;
+
+		CloudNode cloudNode = CloudNode.getInstance();
+		Set<Node> cloudNodeSet = new HashSet<>();
+		cloudNodeSet.add(cloudNode);
 		
 		for (Node node  : NetworkModel.getModel().getNodes()) {
-			if(node != SchedulerProxy.PROXY)
-			{
+			if(node instanceof Device) {
 				short rssi = ((Device)node).getWifiRSSI();
 				Set<Node> nodeSet = new HashSet<Node>();
 				nodeSet.add(node);
@@ -88,19 +94,23 @@ public class Simulation {
 				Set<Node> proxySet = new HashSet<Node>();
 				proxySet.add(SchedulerProxy.PROXY);
 				
-				WifiLink wl1 = new WifiLink(rssi,nodeSet,proxySet);
-				WifiLink wl2 = new WifiLink(rssi,proxySet,nodeSet);
+				WifiLink wl1 = new WifiLink(rssi, nodeSet, proxySet);
+				WifiLink wl2 = new WifiLink(rssi, proxySet, nodeSet);
+				WifiLink wl3 = new WifiLink(rssi, nodeSet, cloudNodeSet);
+
 				
-				((SimpleNetworkModel)NetworkModel.getModel()).addNewLink(wl1);
-				((SimpleNetworkModel)NetworkModel.getModel()).addNewLink(wl2);
+				NetworkModel.getModel().addNewLink(wl1);
+				NetworkModel.getModel().addNewLink(wl2);
+                NetworkModel.getModel().addNewLink(wl3);
 			}
-	      }
-		
+		}
+
 		edu.isistan.simulator.Simulation.runSimulation();
 		
 		
-		if (storeInDB)
-			JobStatsUtils.storeInDB();		
+		if (storeInDB) {
+			JobStatsUtils.storeInDB();
+		}
 		
 		//Logger.flushDebugInfo();
 		
@@ -117,11 +127,10 @@ public class Simulation {
 		System.out.println(JobStatsUtils.timeToHours(JobStatsUtils.getEffectiveExecutionTime()));
 		System.out.print("Successfully execution time per effective job: ");
 		int execJobs = JobStatsUtils.getSuccessfullyExecutedJobs();
-		if (execJobs > 0){
+		if (execJobs > 0) {
 			System.out.println(JobStatsUtils.getEffectiveExecutionTime()/execJobs);
 			System.out.println(JobStatsUtils.timeToHours(JobStatsUtils.getEffectiveExecutionTime()/execJobs));
-		}
-		else{
+		} else {
 			System.out.println(JobStatsUtils.timeToHours(execJobs));
 			System.out.println(JobStatsUtils.timeToHours(execJobs));
 		}
@@ -134,8 +143,7 @@ public class Simulation {
 		if (execJobs > 0){
 			System.out.println(JobStatsUtils.getEffectiveQueueTime()/JobStatsUtils.getSuccessfullyExecutedJobs());
 			System.out.println(JobStatsUtils.timeToHours(JobStatsUtils.getEffectiveQueueTime()/JobStatsUtils.getSuccessfullyExecutedJobs()));
-		}
-		else{
+		} else {
 			System.out.println(execJobs);
 			System.out.println(JobStatsUtils.timeToHours(execJobs));
 		}
@@ -244,47 +252,51 @@ public class Simulation {
 	}
 
 	private static void setPersisters() {
-		IPersisterFactory pf = new MybatisPersisterFactory();
-		DeviceReader.setPersisterFactory(pf);
-		JobStatsTuple.setIPersisterFactory(pf);
-		JobStatsUtils.persisterFactory = pf;
-		DeviceTuple.setIPersisterFactory(pf);
-		SimReader.setPersisterFactory(pf);
+		IPersisterFactory persistenceFactory = new MybatisPersisterFactory();
+		DeviceReader.setPersisterFactory(persistenceFactory);
+		JobStatsTuple.setIPersisterFactory(persistenceFactory);
+		JobStatsUtils.persisterFactory = persistenceFactory;
+		DeviceTuple.setIPersisterFactory(persistenceFactory);
+		SimReader.setPersisterFactory(persistenceFactory);
 		
 	}
 	
-	private static void ValidateExperiment()
+	private static void validateExperiment()
 	{
 		//Validate: Devices Initial energy is enough for Jobs Assignments
 		java.util.HashMap<Device, Double> device_assignEnergy = new java.util.HashMap<Device, Double>();
 		java.util.HashMap<Device, Long> device_assignTime = new java.util.HashMap<Device, Long>();
-		Collection<InputTransferInfo> transfers = SchedulerProxy.PROXY.getTransfersCompleted().values();
-		transfers.addAll(SchedulerProxy.PROXY.getTransfersPending().values());
+		Collection<TransferInfo> transfers = SchedulerProxy.PROXY.getTransfersCompleted();
+		transfers.addAll(SchedulerProxy.PROXY.getTransfersPending());
 		
 		boolean valid_assigment = true;
-		for (InputTransferInfo tInfo : transfers) {
-			double energy  = device_assignEnergy.containsKey(tInfo.device)?device_assignEnergy.get(tInfo.device):0;
-			energy += tInfo.device.getEnergyWasteInTransferingData(tInfo.job.getInputSize());
-			energy += tInfo.device.getEnergyWasteInTransferingData(tInfo.job.getOutputSize());
-			device_assignEnergy.put(tInfo.device, energy);
+		for (TransferInfo tInfo : transfers) {
+			// FIXME: unsafe
+			Device device = (Device) tInfo.getDestination();
+			Job job = (Job) tInfo.getData();
+
+			double energy  = device_assignEnergy.containsKey(device)?device_assignEnergy.get(device):0;
+			energy += device.getEnergyWasteInTransferringData(job.getInputSize());
+			energy += device.getEnergyWasteInTransferringData(job.getOutputSize());
+			device_assignEnergy.put(device, energy);
 			
-			long time = device_assignTime.containsKey(tInfo.device)?device_assignTime.get(tInfo.device):0;
+			long time = device_assignTime.containsKey(device) ? device_assignTime.get(device) : 0;
 			
-			int data = tInfo.job.getInputSize();
+			int data = job.getInputSize();
 			long subMessagesCount = (long) Math.ceil(data/(double)Device.MESSAGES_BUFFER_SIZE);
 			long lastMessageSize = (long)data - (subMessagesCount-1)*Device.MESSAGES_BUFFER_SIZE;
-			time += (subMessagesCount-1)*NetworkModel.getModel().getTransmissionTime(SchedulerProxy.PROXY, tInfo.device, (int)Device.MESSAGES_BUFFER_SIZE);
-			time += NetworkModel.getModel().getTransmissionTime(SchedulerProxy.PROXY, tInfo.device, (int)lastMessageSize);		
+			time += (subMessagesCount-1)*NetworkModel.getModel().getTransmissionTime(SchedulerProxy.PROXY, device, (int)Device.MESSAGES_BUFFER_SIZE);
+			time += NetworkModel.getModel().getTransmissionTime(SchedulerProxy.PROXY, device, (int)lastMessageSize);
 
-			data = tInfo.job.getOutputSize();
+			data = job.getOutputSize();
 		    subMessagesCount = (long) Math.ceil(data/(double)Device.MESSAGES_BUFFER_SIZE);
 			lastMessageSize = (long)data - (subMessagesCount-1)*Device.MESSAGES_BUFFER_SIZE;
-			time += (subMessagesCount-1)*NetworkModel.getModel().getTransmissionTime(tInfo.device, SchedulerProxy.PROXY, (int)Device.MESSAGES_BUFFER_SIZE);
-			time += NetworkModel.getModel().getTransmissionTime(tInfo.device, SchedulerProxy.PROXY, (int)lastMessageSize);
+			time += (subMessagesCount-1)*NetworkModel.getModel().getTransmissionTime(device, SchedulerProxy.PROXY, (int)Device.MESSAGES_BUFFER_SIZE);
+			time += NetworkModel.getModel().getTransmissionTime(device, SchedulerProxy.PROXY, (int)lastMessageSize);
 			
-			device_assignTime.put(tInfo.device, time);
+			device_assignTime.put(device, time);
 			
-			if(tInfo.device.getInitialJoules() < energy){
+			if(device.getInitialJoules() < energy) {
 				valid_assigment = false;
 			}
 		}
@@ -300,8 +312,8 @@ public class Simulation {
 		int  i = 0;
 		for (Device device : device_assignEnergy.keySet()) {
 			double assign_energy = device_assignEnergy.get(device);
-			double waste_energy = device.getAccEnergyInTransfering();
-			double ack_energy =  device.getJobsTransfersCompleted().size()* device.getEnergyWasteInTransferingData(NetworkModel.getModel().getAckMessageSizeInBytes());
+			double waste_energy = device.getAccEnergyInTransferring();
+			double ack_energy =  device.getFinishedJobTransfersCompleted().size() * device.getEnergyWasteInTransferringData(NetworkModel.getModel().getAckMessageSizeInBytes());
 			if(Math.abs(assign_energy - waste_energy) > 0.01){	//+ ack_energy
 				valid_energy_simulation = false;
 			}
@@ -310,8 +322,8 @@ public class Simulation {
 	
 			long expectedTransferingTime = device_assignTime.get(device);
 			
-			long lastTime = ((SimpleNetworkModel)NetworkModel.getModel()).lastTransferingTimes.get(device);
-			long firstTime = ((SimpleNetworkModel)NetworkModel.getModel()).firstTransferingTimes.get(device);
+			long lastTime = ((SimpleNetworkModel)NetworkModel.getModel()).lastTransferringTimes.get(device);
+			long firstTime = ((SimpleNetworkModel)NetworkModel.getModel()).firstTransferringTimes.get(device);
 			long transferingTime = lastTime - firstTime;
 			
 			if(Math.abs(expectedTransferingTime - transferingTime) > 0.01){

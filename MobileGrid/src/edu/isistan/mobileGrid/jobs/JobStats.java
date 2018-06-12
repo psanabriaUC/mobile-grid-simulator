@@ -1,24 +1,32 @@
 package edu.isistan.mobileGrid.jobs;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 import edu.isistan.mobileGrid.network.Node;
 
-public class JobStats{	
+public class JobStats {
 	
 	protected boolean assigned = false;
-	protected boolean success=false;
+	protected boolean success = false;
 	protected boolean successTrasferBack=false;
 	protected boolean rejected=false;
 	//private boolean transferBackInitiated = false;
 	
 	/**this list indicates whether a job transferring was completed or not, i.e., received by the destiny node*/
-	protected List<Boolean> transfersCompleted=new ArrayList<Boolean>();	
-	protected List<Long> startTransferTimes=new ArrayList<Long>();
-	protected List<Node> transfers=new ArrayList<Node>();	
-	protected List<Long> transferTimes=new ArrayList<Long>();	
-	
+	/*
+	protected List<Boolean> transfersCompleted = new ArrayList<Boolean>();
+	protected List<Long> startTransferTimes = new ArrayList<Long>();
+	protected List<Node> transfers = new ArrayList<Node>();
+	protected List<Long> transferTimes = new ArrayList<Long>();
+	*/
+
+    /**
+     * Statistics of all job-related data sent to entities meant to process them.
+     */
+	protected List<TransferStatus> transfersInfo = new ArrayList<>();
+
+
+	// Statistics of all results stemming from processing jobs sent back to the original emitter.
 	private List<Node> resultsTransfers=new ArrayList<Node>();
 	private List<Long> resultsTransfersTimes=new ArrayList<Long>();
 	
@@ -38,10 +46,8 @@ public class JobStats{
 	public JobStats(long startTime, Node node) {
 		super();
 		this.startTime = startTime;
-		this.transfersCompleted.add(true);
-		this.transfers.add(node);
-		this.transferTimes.add(startTime);
-		this.startTransferTimes.add(startTime);
+
+		this.transfersInfo.add(new TransferStatus(true, node, startTime, startTime));
 	}
 	
 	public boolean isAssigned() {
@@ -63,17 +69,25 @@ public class JobStats{
 	public void setSuccess(boolean success) {
 		this.success = success;
 	}
-	
-	public List<Node> getTransfers() {
-		return transfers;
+
+    public List<Node> getTransfers() {
+	    List<Node> nodes = new ArrayList<>();
+	    for (TransferStatus transferStatus : this.transfersInfo) {
+	        nodes.add(transferStatus.node);
+        }
+		return nodes;
 	}
-	
-	
-	public void addTransfers(Node node, long time, long startTime) {
+
+
+    public void addTransfers(Node node, long time, long startTime) {
+        this.transfersInfo.add(new TransferStatus(true, node, startTime, time));
+
+	    /*
 		this.transfersCompleted.add(false);
 		this.transfers.add(node);
 		this.transferTimes.add(time);
 		this.startTransferTimes.add(startTime);
+		*/
 	}
 	
 	public void addResultsTransfers(Node node, long time) {
@@ -85,11 +99,18 @@ public class JobStats{
 		return startTime;
 	}
 	
-	public void setLastTransferTime(long time, long startTime){
+	public void setLastTransferTime(long time, long startTime) {
+	    TransferStatus lastTransferInfo = this.transfersInfo.get(this.transfersInfo.size() - 1);
+
+        lastTransferInfo.startTransferTime = startTime;
+        lastTransferInfo.transferTime = time;
+
+	    /*
 		this.transferTimes.remove(this.transferTimes.size()-1);
 		this.transferTimes.add(time);
 		this.startTransferTimes.remove(this.startTransferTimes.size()-1);
 		this.startTransferTimes.add(startTime);
+		*/
 	}
 	
 	public void setStartTime(long startTime) {
@@ -112,15 +133,12 @@ public class JobStats{
 		this.finishTime = finishTime;
 	}
 	
-	public List<Long> getTransferTimes() {
-		return transferTimes;
-	}
-	
 	public long getTotalTransferTime(){
-		long t=0;
-		for(Long l:this.transferTimes)
-			t+=l;
-		return t;
+		long total = 0;
+		for (TransferStatus transferStatus : transfersInfo) {
+		    total += transferStatus.transferTime;
+        }
+		return total;
 	}
 	
 	public long getTotalResultsTransferTime(){
@@ -157,12 +175,17 @@ public class JobStats{
 	}
 
 	public void setLastResultTransferTime(long time) {
+        TransferStatus lastTransferInfo = this.transfersInfo.get(this.transfersInfo.size() - 1);
+        lastTransferInfo.transferTime = time;
+
+	    /*
 		this.resultsTransfersTimes.remove(this.transferTimes.size()-1);
 		this.resultsTransfersTimes.add(time);
+		*/
 	}
 
 	public int getTotalTransfers() {
-		return this.transferTimes.size();
+		return this.transfersInfo.size();
 	}
 	
 	public int getTotalResultTransfers() {
@@ -184,18 +207,31 @@ public class JobStats{
 	public void setJobTransferCompleted(Node node) {
 		/**@TODO: in the case the job is sent several times to the same node, this method will set as complete the first transferring. Provide a fix
 		 * to this behavior if this case becomes usual in simulations
-		 * */ 
-		int jobPosition = transfers.indexOf(node);		
-		this.transfersCompleted.remove(jobPosition);
-		this.transfersCompleted.add(jobPosition, true);		
+		 * */
+
+        TransferStatus transferStatus = null;
+        for (TransferStatus item : this.transfersInfo) {
+            if (item.node == node) {
+                transferStatus = item;
+                break;
+            }
+        }
+
+        if (transferStatus == null) {
+            throw new IllegalStateException("Marked a job as 'complete' without ever having it sent first.");
+        }
+
+        transferStatus.transferCompleted = true;
 	}
 
 	public boolean wasReceivedByAWorkerNode() {
 		//first node of the transfer node list is ignored because it is considered that is the node from which de job was scheduled 
-		for (int i=1; i < this.transfersCompleted.size(); i++) {			
-			if (this.transfersCompleted.get(i).booleanValue()==true) return true;
-		}
-		return false;
+		for (int i = 1; i < this.transfersInfo.size(); i++) {
+		    if (transfersInfo.get(i).transferCompleted) {
+		        return true;
+            }
+        }
+        return false;
 	}
 
 	public boolean isRejected() {
@@ -213,6 +249,36 @@ public class JobStats{
 	public void setExecutedMips(long executedMips) {
 		this.executedMips = executedMips;
 	}
+
+    protected class TransferStatus {
+        private boolean transferCompleted;
+        private Node node;
+        private long startTransferTime;
+        private long transferTime;
+
+        public TransferStatus(boolean transferCompleted, Node node, long startTransferTime, long transferTime) {
+            this.transferCompleted = transferCompleted;
+            this.node = node;
+            this.startTransferTime = startTransferTime;
+            this.transferTime = transferTime;
+        }
+
+        public boolean isTransferCompleted() {
+            return transferCompleted;
+        }
+
+        public Node getNode() {
+            return node;
+        }
+
+        public long getStartTransferTime() {
+            return startTransferTime;
+        }
+
+        public long getTransferTime() {
+            return transferTime;
+        }
+    }
 	
 
 }

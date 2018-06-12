@@ -62,7 +62,8 @@ public class DataPlusCPUAwareFitnessFunction extends FitnessFunction {
 				short devId = getDeviceId(da.getDevice());
 				nodesEnergySpent[devId] = da.getDeviceEnergyWasted();
 				gridEnergy-=nodesEnergySpent[devId];
-				nodesRemainingEnergyLevel[devId] = da.getDevice().getLastBatteryLevelUpdate() - (int)(((da.getDeviceEnergyWasted()* 100) / da.getDevice().getTotalBatteryCapacityInJoules()) * BatteryManager.PROFILE_ONE_PERCENT_REPRESENTATION);
+				nodesRemainingEnergyLevel[devId] = SchedulerProxy.PROXY.getLastReportedSOC(da.getDevice()) -
+						(int)(((da.getDeviceEnergyWasted()* 100) / da.getDevice().getTotalBatteryCapacityInJoules()) * BatteryManager.PROFILE_ONE_PERCENT_REPRESENTATION);
 				nodesJobCountAssignments[devId] = da.getAssignedJobs().size();
 				gridJobsTransfered += da.getAffordableJobCompletelyTransfered();
 				//Logger.println("Expected node energy after jobs data transferrings:"+((Entity)da.getDevice()).getName()+" "+(nodesRemainingEnergyLevel[devId]));

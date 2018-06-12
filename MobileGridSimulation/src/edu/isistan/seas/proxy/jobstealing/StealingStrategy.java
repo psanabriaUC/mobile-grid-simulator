@@ -9,5 +9,5 @@ import edu.isistan.mobileGrid.node.Device;
  */
 public interface StealingStrategy {
 
-	public Device getVictim(StealerProxy sp, Device stealer);
+	Device getVictim(StealerProxy sp, Device stealer);
 }

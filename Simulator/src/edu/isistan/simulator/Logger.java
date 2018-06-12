@@ -8,13 +8,16 @@ import java.nio.ByteBuffer;
 import java.io.File;
 import java.io.FileWriter;
 
-
+/**
+ * A utility class for logging messages into the console.
+ */
 public class Logger {
 	
 	private static OutputStream DEBUG_OUTPUT_STREAM = null; 
 	
 	/** The Constant LINE_SEPARATOR. */
 	private static final String LINE_SEPARATOR = System.getProperty("line.separator");
+
 	/**
 	 * Set data.separator to choose another way of separating the info in logs
 	 */
@@ -44,14 +47,14 @@ public class Logger {
 		OUTPUT=out;
 	}
 	
-	private static OutputStream getOutputStream(){
-		if(OUTPUT==null)
+	private static OutputStream getOutputStream() {
+		if (OUTPUT == null)
 			return System.out;
 		return OUTPUT;
 	}
 	
 	public static void print(String data){
-		if(ENABLE)
+		if (ENABLE)
 			try {
 				getOutputStream().write(data.getBytes());
 			} catch (IOException e) {
@@ -60,7 +63,7 @@ public class Logger {
 	}
 	
 	public static void println(String data){
-		if(ENABLE)
+		if (ENABLE)
 			try {
 				getOutputStream().write(data.getBytes());
 				getOutputStream().write(LINE_SEPARATOR.getBytes());
@@ -70,7 +73,7 @@ public class Logger {
 	}
 	
 	public static void println(){
-		if(ENABLE)
+		if (ENABLE)
 			try {
 				getOutputStream().write(LINE_SEPARATOR.getBytes());
 			} catch (IOException e) {
@@ -79,24 +82,24 @@ public class Logger {
 	}
 	
 	public static void println(Object data){
-		if(ENABLE)
+		if (ENABLE)
 			println(data.toString());
 	}
 	
 	public static void print(Object data){
-		if(ENABLE)
+		if (ENABLE)
 			print(data.toString());
 	}
 	
 	public static void logEntity(Entity e, String log, Object... data) {
-		if(!ENABLE) return;
+		if (!ENABLE) return;
 		StringBuffer logAux=new StringBuffer();
 		logAux.append(Simulation.getTime());
 		logAux.append(DATA_SEPARATOR);
 		logAux.append(e.getName());
 		logAux.append(DATA_SEPARATOR);
 		logAux.append(log);
-		for(Object o:data){
+		for(Object o: data){
 			logAux.append(DATA_SEPARATOR);
 			logAux.append(o);			
 		}

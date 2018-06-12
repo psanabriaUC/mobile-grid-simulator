@@ -45,9 +45,12 @@ public class JobStatsUtils {
 	 * @param node
 	 */
 	public static void addJob(Job job, Node node){
-		if(stats.containsKey(job)) return;
+		if(stats.containsKey(job)) {
+			return;
+		}
+
 		long time = Simulation.getTime();
-		JobStats stat=new JobStatsTuple(job.getJobId(), JobStatsUtils.sim_id,time, node);		
+		JobStats stat = new JobStatsTuple(job.getJobId(), JobStatsUtils.sim_id, time, node);
 		stats.put(job, stat);
 	}
 	
@@ -122,7 +125,7 @@ public class JobStatsUtils {
 	 * Call when a job results was successfully transfered back to the proxy or origin node 
 	 * @param job
 	 */
-	public static void successTrasferBack(Job job){		
+	public static void successTransferBack(Job job){
 		stats.get(job).successTransferedBack();
 	}
 	

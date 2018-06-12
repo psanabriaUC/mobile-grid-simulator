@@ -5,46 +5,68 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.Map;
 
+import edu.isistan.mobileGrid.jobs.Job;
+import edu.isistan.simulator.Entity;
 import edu.isistan.simulator.Event;
 import edu.isistan.simulator.Simulation;
 
+/**
+ * A simple network concrete implementation in which all links between {@link Entity}s are 100% reliable.
+ * By default, entities added to this network are isolated from one another. Communication is rendered possible
+ * only if a {@link Link} is added between them.
+ */
 public class SimpleNetworkModel extends NetworkModel {
 	
-	private Set<Node> nodes=new HashSet<Node>();
-	private Map<Node,Map<Node,Link>> links=new HashMap<Node, Map<Node,Link>>();
-	private Link defaultLink=new NullLink();
-	
-	public HashMap<Node, Long> firstTransferingTimes = new HashMap<Node, Long>();
-	public HashMap<Node, Long> lastTransferingTimes = new HashMap<Node, Long>();
+	private Set<Node> nodes = new HashSet<Node>();
+	private Map<Node,Map<Node,Link>> links = new HashMap<Node, Map<Node,Link>>();
+	private Link defaultLink = new NullLink();
+
+    /**
+     * Stores the timestamp at which the different entities first sent a message during the simulation.
+     */
+	public final HashMap<Node, Long> firstTransferringTimes = new HashMap<Node, Long>();
+
+    /**
+     * Stores the timestamp at which the different entities last sent a message during the simulation.
+     */
+	public final HashMap<Node, Long> lastTransferringTimes = new HashMap<Node, Long>();
 
 	@Override
-	public long send(Node scr, Node dst, int id, int lenght, Object data) {
-		Link l=getLink(scr, dst);
-		if(l.canSend(scr, dst)){
-			scr.startTransfer(dst, id, data);
-			dst.incomingData(scr, id);
-			long simulationTime = Simulation.getTime();
-			long time = simulationTime +l.getTransmissionTime(lenght);
-			
-			if(!firstTransferingTimes.containsKey(dst))
-				firstTransferingTimes.put(dst, simulationTime);
-			lastTransferingTimes.put(scr, time);
-			
-			Message m=new Message(id, scr, dst, data);
-			m.setAttribute(Message.SIZE, String.valueOf(lenght));
-			Simulation.addEvent(Event.createEvent(Event.NO_SOURCE, time,this.entityId, 0, m));
-			return time;
-		} else 
-			scr.fail(id);
-		return 0;
-	}
+    public <T> long send(Node scr, Node dst, int id, int length, T data, int offset, boolean lastMessage) {
+        Message<T> message = new Message<>(id, scr, dst, data, length, offset, lastMessage);
+
+        Link link = getLink(scr, dst);
+        if(link.canSend(scr, dst)) {
+            long currentTime = Simulation.getTime();
+            long estimatedMessageReceivedTime = currentTime + link.getTransmissionTime(length);
+
+            // Updates first and last message sent timestamps. For post-simulation validation purposes only.
+            if(!firstTransferringTimes.containsKey(dst)) {
+                firstTransferringTimes.put(dst, currentTime);
+            }
+            lastTransferringTimes.put(scr, estimatedMessageReceivedTime);
+
+            // Notifies sender that it will start sending data.
+            scr.startTransfer(dst, id, data);
+
+            // Notifies receiver that it will start receiving data.
+            dst.incomingData(scr, id);
+
+            Simulation.addEvent(Event.createEvent(Event.NO_SOURCE, estimatedMessageReceivedTime,
+                    this.getNetworkDelayEntityId(), 0, message));
+            return estimatedMessageReceivedTime;
+        } else {
+            scr.fail(message);
+        }
+        return 0;
+    }
 
 	private Link getLink(Node scr, Node dst) {
-		Link result=this.defaultLink;
-		Map<Node,Link> m=this.links.get(scr);
-		if(m!=null)
-			if(m.containsKey(dst))
-				result=m.get(dst);
+		Link result = this.defaultLink;
+		Map<Node, Link> map = this.links.get(scr);
+		if(map != null && map.containsKey(dst)) {
+			result = map.get(dst);
+		}
 		return result;
 	}
 
@@ -54,15 +76,15 @@ public class SimpleNetworkModel extends NetworkModel {
 	}
 	
 	@Override
-	public void addNewLink(Link l) {
-		for(Node scr:l.getSources()){
-			Map<Node,Link> map=this.links.get(scr);
-			if(map==null){
-				map=new HashMap<Node, Link>();
+	public void addNewLink(Link link) {
+		for(Node scr: link.getSources()) {
+			Map<Node,Link> map = this.links.get(scr);
+			if(map == null) {
+				map = new HashMap<Node, Link>();
 				this.links.put(scr, map);
 			}
-			for(Node dst:l.getDestinations())
-				map.put(dst, l);
+			for(Node dst: link.getDestinations())
+				map.put(dst, link);
 		}
 	}
 
@@ -77,13 +99,16 @@ public class SimpleNetworkModel extends NetworkModel {
 	}
 
 	@Override
-	public void removeLink(Link l) {
-		for(Node scr:l.getSources()){
-			Map<Node,Link> map=this.links.get(scr);
-			if(map!=null){
-				for(Node dst:l.getDestinations())
+	public void removeLink(Link link) {
+		for(Node scr: link.getSources()){
+			Map<Node,Link> map = this.links.get(scr);
+			if (map != null){
+				for (Node dst: link.getDestinations()) {
 					map.remove(dst);
-				if(map.isEmpty()) this.links.remove(scr);
+				}
+				if (map.isEmpty()) {
+					this.links.remove(scr);
+				}
 			}
 		}
 	}
@@ -103,8 +128,8 @@ public class SimpleNetworkModel extends NetworkModel {
 
 	@Override
 	public long getTransmissionTime(Node scr, Node dst,int messageSize) {
-		Link l=getLink(scr, dst);
-		return l.getTransmissionTime(messageSize);
+		Link link = getLink(scr, dst);
+		return link.getTransmissionTime(messageSize);
 	}
 
 }

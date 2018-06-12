@@ -1,5 +1,9 @@
 package edu.isistan.mobileGrid.jobs;
-/**This class allow to store the energy, measured in Joules, of all transfers a node does during its lifetime. Values are summarized in two variables: Joules wasted in sending data and Joules wasted in receiving data through a network*/
+/**
+ * This class allow to store the energy, measured in Joules, of all transfers a node does during its lifetime.
+ * Values are summarized in two variables: Joules wasted in sending data and Joules wasted in receiving data through a
+ * network
+ */
 public class NetStats {
 	private double accJoulesInReceivingData;
 	private double accJoulesInSendingData;
@@ -8,7 +12,7 @@ public class NetStats {
 	private double maxAvailableJoules;
 	private int updateMsgCount;
 	
-	public NetStats(){
+	public NetStats() {
 		accJoulesInReceivingData = 0.0;
 		accJoulesInSendingData = 0.0;
 		setUpdateMsgCount(0);
@@ -38,7 +42,7 @@ public class NetStats {
 	}
 
 	public void addJoulesInSendingData(double joulesInSendingData) {
-		this.accJoulesInSendingData+= joulesInSendingData;
+		this.accJoulesInSendingData += joulesInSendingData;
 	}
 		
 	public int getUpdateMsgCount() {
@@ -58,15 +62,15 @@ public class NetStats {
 	}
 	
 	public void addMegabytesSent(double dataInMegabytes){
-		this.accMegabytesSent+=dataInMegabytes;
+		this.accMegabytesSent += dataInMegabytes;
 	}
 	
 	public void addMegabytesReceived(double dataInMegabytes){
-		this.accMegabytesReceived+=dataInMegabytes;
+		this.accMegabytesReceived += dataInMegabytes;
 	}
 
 	public boolean IsMaximumAvailableJoulesExcedeed() {
-		return accJoulesInReceivingData+ accJoulesInSendingData > maxAvailableJoules;
+		return accJoulesInReceivingData + accJoulesInSendingData > maxAvailableJoules;
 		
 	}
 }

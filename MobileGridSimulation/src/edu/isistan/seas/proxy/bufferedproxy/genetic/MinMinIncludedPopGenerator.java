@@ -56,8 +56,8 @@ public class MinMinIncludedPopGenerator extends PopulationGenerator {
 
 			for (int index = 0; index < totalDataPerDevice.size(); index++) {
 				DataAssignment da = totalDataPerDevice.get(index);
-				double job_energy = da.getDevice().getEnergyWasteInTransferingData(dataJob.getInputSize());
-				job_energy += da.getDevice().getEnergyWasteInTransferingData(dataJob.getOutputSize());
+				double job_energy = da.getDevice().getEnergyWasteInTransferringData(dataJob.getInputSize());
+				job_energy += da.getDevice().getEnergyWasteInTransferringData(dataJob.getOutputSize());
 				double rem_energy = DataAssignment.evaluator.eval(da) - job_energy;
 				if (rem_energy > 0 && rem_energy > assignment_remaining_energy) {
 					assignment = da;

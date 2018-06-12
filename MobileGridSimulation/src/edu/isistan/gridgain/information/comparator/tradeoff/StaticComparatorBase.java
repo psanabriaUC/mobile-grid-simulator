@@ -6,25 +6,27 @@ import java.util.Map;
 import java.util.Properties;
 
 import edu.isistan.mobileGrid.node.Device;
+import edu.isistan.mobileGrid.node.SchedulerProxy;
 import edu.isistan.seas.proxy.DeviceComparator;
 
 public class StaticComparatorBase extends DeviceComparator {
 
 	protected Map<Long, Double> properties;
 	
-	public StaticComparatorBase(String propFile){
-		properties = new HashMap<Long, Double>();
+	public StaticComparatorBase(String propFile) {
+		properties = new HashMap<>();
 		try {
-			Properties p = new Properties();
-			p.load(new FileInputStream(propFile));
-			for(String k:p.stringPropertyNames())
-				properties.put(Long.parseLong(k), Double.parseDouble(p.getProperty(k)));
+			Properties properties = new Properties();
+			properties.load(new FileInputStream(propFile));
+			for(String property : properties.stringPropertyNames())
+				this.properties.put(Long.parseLong(property), Double.parseDouble(properties.getProperty(property)));
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		} 
 	}
 	@Override
-	public double getValue(Device arg0) {
-		return ((double)arg0.getLastBatteryLevelUpdate())/properties.get(arg0.getMIPS())/((double)(arg0.getNumberOfJobs()+1));
+	public double getValue(Device device) {
+		double nJobs = SchedulerProxy.PROXY.getIncomingJobs(device) + device.getNumberOfJobs() + 1;
+		return ((double)SchedulerProxy.PROXY.getLastReportedSOC(device)) / properties.get(device.getMIPS()) / nJobs;
 	}
 }

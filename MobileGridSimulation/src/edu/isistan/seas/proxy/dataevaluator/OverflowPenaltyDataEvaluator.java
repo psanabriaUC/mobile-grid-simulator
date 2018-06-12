@@ -1,5 +1,6 @@
 package edu.isistan.seas.proxy.dataevaluator;
 
+import edu.isistan.mobileGrid.node.SchedulerProxy;
 import edu.isistan.seas.proxy.DataAssignment;
 import edu.isistan.seas.proxy.DataAssignmentEvaluatorIF;
 
@@ -10,7 +11,7 @@ public class OverflowPenaltyDataEvaluator implements DataAssignmentEvaluatorIF {
 
 	/**maxAvailable is the maximum battery percentage that could be used for transferring data. The value should be indicated with a positive integer
 	 * within the range of [0-100]*/	
-	private double maxAvailPercentageEnergy = 100;
+	private double maxAvailPercentageEnergy;
 	
 	public OverflowPenaltyDataEvaluator(int maximumAllowed){
 		this.maxAvailPercentageEnergy = maximumAllowed >= 0 && maximumAllowed <= 100 ? maximumAllowed : 100;
@@ -19,50 +20,50 @@ public class OverflowPenaltyDataEvaluator implements DataAssignmentEvaluatorIF {
 	@Override
 	public double eval(DataAssignment da) {
 				
-		double nodeAvailableEnergy = da.getDevice().getJoulesBasedOnLastReportedSOC();
+		double nodeAvailableEnergy = SchedulerProxy.PROXY.getJoulesBasedOnLastReportedSOC(da.getDevice());
 		double nodeMaxAvailableEnergy = (maxAvailPercentageEnergy * nodeAvailableEnergy) / 100;
-		int completelyTransferedJobs=0;
-		double totalDataTransfered=0.0d;
-		double energyWastedWhileReceiving=0.0d;
-		double energyWastedWhileSending=0.0d;
-		double totalEnergyWasted=0.0d;
+		int completelyTransferedJobs = 0;
+		double totalDataTransfered = 0.0d;
+		double energyWastedWhileReceiving = 0.0d;
+		double energyWastedWhileSending = 0.0d;
+		double totalEnergyWasted = 0.0d;
 		int lastAffordableJob = 0;
 		
 		for (int job_index = 0; job_index < da.getAssignedJobs().size(); job_index++) {
 			double jobInputData = da.getAssignedJobs().get(job_index).getInputSize();
 			double jobOutputData = da.getAssignedJobs().get(job_index).getOutputSize();
-			energyWastedWhileReceiving+= da.getDevice().getEnergyWasteInTransferingData(jobInputData);
-			energyWastedWhileSending+= da.getDevice().getEnergyWasteInTransferingData(jobOutputData);
+			energyWastedWhileReceiving += da.getDevice().getEnergyWasteInTransferringData(jobInputData);
+			energyWastedWhileSending += da.getDevice().getEnergyWasteInTransferringData(jobOutputData);
 			
-			if (energyWastedWhileReceiving + energyWastedWhileSending <= nodeMaxAvailableEnergy){
+			if (energyWastedWhileReceiving + energyWastedWhileSending <= nodeMaxAvailableEnergy) {
 				completelyTransferedJobs++;
-				lastAffordableJob=job_index;
-				totalDataTransfered+=((jobInputData + jobOutputData) / (double)(1024*1024)); //data transfer is indicated in Megabytes				
+				lastAffordableJob = job_index;
+				totalDataTransfered += ((jobInputData + jobOutputData) / (double)(1024*1024)); //data transfer is indicated in Megabytes
 				totalEnergyWasted=energyWastedWhileReceiving + energyWastedWhileSending;				
-			}
-			else{//Assuming that all jobs data inputs are received by the node before it starts to execute jobs, and jobs are executed in order, and
+			} else {
+				//Assuming that all jobs data inputs are received by the node before it starts to execute jobs, and jobs are executed in order, and
 				//jobs data output is sent as the node finish with each job, the following logic penalizes jobs that prevent other jobs from finished
 				//due to the energy originally planned for transferring data outputs is consumed by data input of the next job in the queue that is
 				//being traversed in this loop.
-				if(energyWastedWhileReceiving <= nodeMaxAvailableEnergy){
+				if(energyWastedWhileReceiving <= nodeMaxAvailableEnergy) {
 					double overflow = (energyWastedWhileReceiving + energyWastedWhileSending - jobOutputData) - nodeAvailableEnergy;
 					
-					while (overflow > 0 && lastAffordableJob >= 0){						
+					while (overflow > 0 && lastAffordableJob >= 0) {
 						double lastAffordableOutput=da.getAssignedJobs().get(lastAffordableJob).getOutputSize();
-						overflow-=da.getDevice().getEnergyWasteInTransferingData(lastAffordableOutput);
-						totalDataTransfered-=((lastAffordableOutput + (double)da.getAssignedJobs().get(lastAffordableJob).getInputSize())/(double)(1024*1024));
+						overflow-=da.getDevice().getEnergyWasteInTransferringData(lastAffordableOutput);
+						totalDataTransfered-=((lastAffordableOutput + (double)da.getAssignedJobs().get(lastAffordableJob).getInputSize()) / (double)(1024*1024));
 						lastAffordableJob--;
 					}
 					completelyTransferedJobs=lastAffordableJob+1;
 				}
 				else{//the penalty increases while energy needed for receiving jobs increases
 					if (lastAffordableJob >= 0){
-						lastAffordableJob=-1;
-						totalDataTransfered=0.0d;
-						completelyTransferedJobs=0;
+						lastAffordableJob = -1;
+						totalDataTransfered = 0.0d;
+						completelyTransferedJobs = 0;
 					}
 					else{					
-						totalDataTransfered-=((jobInputData + jobOutputData)/(double)(1024*1024));
+						totalDataTransfered -= ((jobInputData + jobOutputData) / (double)(1024*1024));
 						completelyTransferedJobs--;
 					}
 				}	

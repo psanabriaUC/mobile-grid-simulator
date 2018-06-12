@@ -22,7 +22,7 @@ public class GreedyBufferedSchedulerProxy extends BufferedSchedulerProxy {
 
 	@Override
 	protected void queueJob(Job job) {
-		int dataTransferRequirement = job.getInputSize()+job.getOutputSize(); 
+		int dataTransferRequirement = job.getInputSize() + job.getOutputSize();
 		boolean inserted = false;
 		int queueIndex = 0;
 		while (!inserted){
@@ -55,18 +55,13 @@ public class GreedyBufferedSchedulerProxy extends BufferedSchedulerProxy {
 			totalDataPerDevice.get(FIRST).scheduleJob(dataJob);
 			Collections.sort(totalDataPerDevice, comp);
 		}
-		
-		for (Iterator<DataAssignment> iterator = totalDataPerDevice.iterator(); iterator.hasNext();) {
-			DataAssignment deviceAssignment = (DataAssignment) iterator.next();
-			Device current = deviceAssignment.getDevice();
-			for (Iterator<Job> iterator2 = deviceAssignment.getAssignedJobs().iterator(); iterator2.hasNext();) {
-				Job job = (Job) iterator2.next();
-				Logger.logEntity(this, "Job assigned to ", job.getJobId() ,current);
-				long time=NetworkModel.getModel().send(this, current, idSend++,  job.getInputSize(), job);
-				long currentSimTime = Simulation.getTime();
-				JobStatsUtils.transfer(job, current, time-currentSimTime,currentSimTime);				
-			}			
-		}		
+
+        for (DataAssignment deviceAssignment : totalDataPerDevice) {
+            Device current = deviceAssignment.getDevice();
+            for (Job job : deviceAssignment.getAssignedJobs()) {
+                queueJobTransferring(current, job);
+            }
+        }
 	}
 
 }

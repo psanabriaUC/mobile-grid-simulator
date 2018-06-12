@@ -27,7 +27,7 @@ public abstract class BufferedSchedulerProxy extends DataIntensiveScheduler {
 			System.out.println(
 					"[WARN] Since no buffer size was provided BufferedScheduler was created with a default buffer size of "
 							+ bufferSize);
-		bufferedJobs = new ArrayList<Job>();
+		bufferedJobs = new ArrayList<>();
 	}
 
 	@Override

@@ -1,16 +1,23 @@
 package edu.isistan.mobileGrid.jobs;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
+/**
+ * A representation of an arbitrary task to be performed/computed by an {@link edu.isistan.simulator.Entity} during
+ * a simulation.
+ */
 public class Job {
-	
+    private static final AtomicInteger NEXT_ID = new AtomicInteger(0);
+
 	private int jobId;
 	private long ops;
 	private int src;
 	private int inputSize;
 	private int outputSize;
 	
-	public Job(int jobId, long ops, int src, int inputSize, int outputSize) {
+	public Job(long ops, int src, int inputSize, int outputSize) {
 		super();
-		this.jobId = jobId;
+		this.jobId = NEXT_ID.incrementAndGet();
 		this.ops = ops;
 		this.src = src;
 		this.inputSize = inputSize;
@@ -56,7 +63,7 @@ public class Job {
 	@Override
 	public boolean equals(Object obj) {
 		if (obj instanceof Job){
-			return ((Job)obj).jobId==this.jobId;
+			return ((Job)obj).jobId == this.jobId;
 		}
 		return false;
 	}

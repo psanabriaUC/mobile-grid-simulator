@@ -3,8 +3,8 @@
 ;nodeFile
 sim_input/nodes/1A100.cnf
 
-;loadBalancing: edu.isistan.gridgain.spi.loadbalacing.energyaware.GridEnergyAwareLoadbalancing
-;comparator: edu.isistan.gridgain.information.comparator.seas.SEASPercentBased
+;loadBalancing: edu.isistan.gridgain.spi.loadbalacing.energyaware.GridEnergyAwareLoadBalancing
+;comparator: edu.isistan.gridgain.information.comparator.seas.EnhancedSEASComparator
 
 ;batteryFile
 sim_input/device_profile/A100/battery0.cnf; 00000000-0000-0000-0000-000000000001

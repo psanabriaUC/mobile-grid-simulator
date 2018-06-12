@@ -14,7 +14,7 @@ import edu.isistan.simulator.Simulation;
 public class RemainingComputingPowerScheduler extends SchedulerProxy {
 
 	/**stores the max flop that a device type (identified by flops) is able to execute*/
-	private final HashMap<Long,Long> maxExecFlop = new HashMap<Long,Long>(){
+	private final HashMap<Long,Long> maxExecFlop = new HashMap<Long,Long>() {
 
 		/**
 		 * 
@@ -31,8 +31,7 @@ public class RemainingComputingPowerScheduler extends SchedulerProxy {
 	private long maxDeviceExecPower=Long.MAX_VALUE;
 	private int maxDevices;	
 	private String[] devicesIDs=null;
-	
-	
+
 	public RemainingComputingPowerScheduler(String name) {
 		super(name);		
 	}
@@ -44,39 +43,40 @@ public class RemainingComputingPowerScheduler extends SchedulerProxy {
 	}
 	
 	private Device getDevice(long jobOps){
-		if (maxDeviceExecPower < 0){//means that the device computing capacity is exceeded			
-			if (currentDeviceIDIndex+1 == maxDevices)//means that there are no more candidates nodes with remaining computing capacity
+		if (maxDeviceExecPower < 0) { //means that the device computing capacity is exceeded
+			if (currentDeviceIDIndex + 1 == maxDevices) //means that there are no more candidates nodes with remaining computing capacity
 				return null;
-			else{//select the next device in the list of candidates
+			else { //select the next device in the list of candidates
 				currentDeviceIDIndex++;
 				maxDeviceExecPower = maxExecFlop.get(devices.get(devicesIDs[currentDeviceIDIndex]).getMIPS());				
 			}
 		}
-		maxDeviceExecPower-=jobOps;
+		maxDeviceExecPower -= jobOps;
 		return devices.get(devicesIDs[currentDeviceIDIndex]);		
 	}
 
 	@Override
-	public void processEvent(Event e) {
-		if(EVENT_JOB_ARRIVE!=e.getEventType()) throw new IllegalArgumentException("Unexpected event");
-		Job job=(Job)e.getData();
+	public void processEvent(Event event) {
+		if (EVENT_JOB_ARRIVE != event.getEventType()) throw new IllegalArgumentException("Unexpected event");
+		Job job = (Job) event.getData();
 		JobStatsUtils.addJob(job, this);
 		Logger.logEntity(this, "Job arrived ", job.getJobId());
 		
-		if (devicesIDs==null){
-			maxDevices=devices.size();
-			devicesIDs=new String[maxDevices];
+		if (devicesIDs == null) {
+			maxDevices = devices.size();
+			devicesIDs = new String[maxDevices];
 			devices.keySet().toArray(devicesIDs);
 			Arrays.sort(devicesIDs);
 			maxDeviceExecPower = maxExecFlop.get(devices.get(devicesIDs[currentDeviceIDIndex]).getMIPS());
 		}
 		
 		Device dev = getDevice(job.getOps());
-		if (dev!=null)
-			queueJobTransferring(dev,job);
-		else{
+		if (dev != null) {
+			queueJobTransferring(dev, job);
+		} else {
 			 JobStatsUtils.rejectJob(job,Simulation.getTime());
-			 Logger.logEntity(this, "Job rejected = "+job.getJobId()+ " at "+Simulation.getTime()+ " simulation time");						
+			 Logger.logEntity(this, "Job rejected = " + job.getJobId() + " at " + Simulation.getTime() +
+					 " simulation time");
 		}
 			
 	}

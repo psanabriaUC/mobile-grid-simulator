@@ -9,18 +9,22 @@ import edu.isistan.mobileGrid.node.SchedulerProxy;
 import edu.isistan.simulator.Event;
 import edu.isistan.simulator.Simulation;
 
+/**
+ * Helper class for reading and parsing a list of {@link Job}s contained in a configuration file. Examples input files can be found in
+ * sim_input/jobs/*.
+ *
+ * This class provides its own Runnable implementation so it can be run in parallel.
+ */
 public class JobReader extends Thread {
 
 	private ReentrantLock simLock;
-	private ReentrantLock eventLock;
 	private BufferedReader conf;
 	private boolean networkMeasurementEnable = false;
 	
-	public JobReader(ReentrantLock simLock, ReentrantLock eventLock, BufferedReader conf, boolean networkEnableFlag) {
+	public JobReader(ReentrantLock simLock, BufferedReader conf, boolean networkEnableFlag) {
 		super();
-		this.simLock=simLock;
-		this.eventLock=eventLock;
-		this.conf=conf;
+		this.simLock = simLock;
+		this.conf = conf;
 		this.networkMeasurementEnable = networkEnableFlag;
 	}
 
@@ -31,49 +35,48 @@ public class JobReader extends Thread {
 	@Override
 	public void run() {
 		try{
-			int id=1;
 			this.simLock.lock();
-			int src=Simulation.getEntityId("PROXY");
+			int schedulerProxyId = Simulation.getEntity("PROXY").getId();
 			this.simLock.unlock();
-			String line=this.conf.readLine();
+
+			String line = this.conf.readLine();
 			boolean lackingJobParameter = false;
-			while(line!=null){
-				line=line.trim();
-				if(line.equals("")||line.startsWith("#")){
-					line=this.conf.readLine();
+
+			// Expected format for each line in the configuration file:
+			// [jobId];[# of CPU cycles required to complete];[arrival time](;[input size];[output size])?
+			while (line != null){
+				line = line.trim();
+				if (line.equals("") || line.startsWith("#")) {
+					line = this.conf.readLine();
 				} else {
-					StringTokenizer ts=new StringTokenizer(line, ";");
+					StringTokenizer ts = new StringTokenizer(line, ";");
+					// Currently the ID defined in the configuration file is ignored, instead it is automatically assigned by the engine.
 					ts.nextToken();
-					long ops=Long.parseLong(ts.nextToken());
-					long time=Long.parseLong(ts.nextToken());
-						
-					int jobId=id;
-					id++;
+					long ops = Long.parseLong(ts.nextToken());
+					long time = Long.parseLong(ts.nextToken());
 
-					int inputSize=0;
-					int outputSize=0;
-					if(ts.hasMoreTokens()){
-						inputSize=Integer.parseInt(ts.nextToken());
-						outputSize=Integer.parseInt(ts.nextToken());
-					}
-					else
-						if (networkMeasurementEnable && (inputSize == 0 || outputSize == 0)){
-							lackingJobParameter = true;
-						}
-					Job j=new Job(jobId, ops, src, inputSize, outputSize);
+					int inputSize = 0;
+					int outputSize = 0;
+					if (ts.hasMoreTokens()) {
+						inputSize = Integer.parseInt(ts.nextToken());
+						outputSize = Integer.parseInt(ts.nextToken());
+					} else if (networkMeasurementEnable) {
+						lackingJobParameter = true;
+                    }
 
-					this.eventLock.lock();
-					Event e=Event.createEvent(Event.NO_SOURCE, time, src, SchedulerProxy.EVENT_JOB_ARRIVE, j);
-					this.eventLock.unlock();
+                    // For each job, we create an encompassing event and send it to the scheduling proxy chosen for this simulation.
+                    // The scheduling proxy will then re-send the events for processing to the appropriate devices according to its policy.
+					Job job = new Job(ops, schedulerProxyId, inputSize, outputSize);
+					Event event = Event.createEvent(Event.NO_SOURCE, time, schedulerProxyId, SchedulerProxy.EVENT_JOB_ARRIVE, job);
 
 					this.simLock.lock();
-					Simulation.addEvent(e);
+					Simulation.addEvent(event);
 					this.simLock.unlock();
 
-					line=this.conf.readLine();
+					line = this.conf.readLine();
 				}
 			}
-			if (lackingJobParameter){
+			if (lackingJobParameter) {
 				System.out.println("[WARN] At least one job has no input size or output size defined");
 			}
 		} catch (Exception e){
@@ -81,7 +84,4 @@ public class JobReader extends Thread {
 			System.exit(1);
 		}
 	}
-	
-	
-
 }
