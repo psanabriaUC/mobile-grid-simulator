@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component inheritJdk="true">
+	<exclude-output/>
+	<contentEntry url="file://$MODULE_DIR$"/>
+	<lib name="commons-math3-3.3.jar" scope="COMPILE">
+		<srcroot url="file://lib/commons-math3-3.3/docs"/>
+		<relative-module-cls project-related="jar://$PROJECT_DIR$/FileGenerator/lib/commons-math3-3.3/commons-math3-3.3.jar!/"/>
+	</lib>
+</component>
