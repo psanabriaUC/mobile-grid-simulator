@@ -5,6 +5,7 @@
 
 # Log file
 *.log
+!MobileGridSimulation/debug/*.log
 
 # BlueJ files
 *.ctxt
