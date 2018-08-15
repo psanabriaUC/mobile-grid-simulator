@@ -17,10 +17,10 @@ import edu.isistan.simulator.Simulation;
  * Base class for the implementation of a centralized proxy that assigns jobs to arbitrary amounts for nodes
  * in a grid.
  */
-public abstract class SchedulerProxy extends Entity  implements Node, DeviceListener {
-	
-	/* Size of message buffer for transfers in bytes */
-	private static final int MESSAGE_SIZE = 1024 * 1024;// 1mb
+public abstract class SchedulerProxy extends Entity implements Node, DeviceListener {
+
+    /* Size of message buffer for transfers in bytes */
+    private static final int MESSAGE_SIZE = 1024 * 1024;// 1mb
 
     /**
      * Information currently known by the proxy about its different nodes. Maps the Node to the object containing
@@ -28,67 +28,67 @@ public abstract class SchedulerProxy extends Entity  implements Node, DeviceList
      */
     private WeakHashMap<Node, DeviceData> deviceDataMap = new WeakHashMap<>();
 
-	public static final int EVENT_JOB_ARRIVE = 1;
+    public static final int EVENT_JOB_ARRIVE = 1;
 
     /**
      * Processes an event dispatched by the {@link Simulation}.
      *
      * @param event The event that will be processed.
      */
-	public abstract void processEvent(Event event);
+    public abstract void processEvent(Event event);
 
     /**
      * A static reference to the proxy so it can be accessed from anywhere.
      */
-	public static SchedulerProxy PROXY;
+    public static SchedulerProxy PROXY;
 
-	protected HashMap<String, Device> devices = new HashMap<String,Device>();
+    protected HashMap<String, Device> devices = new HashMap<String, Device>();
 
-	public SchedulerProxy(String name) {
-		super(name);
-		PROXY = this;
-		Simulation.addEntity(this);
-		NetworkModel.getModel().addNewNode(this);
-		Logger.logEntity(this, "Proxy created", this.getClass().getName());
-	}
-	
-	/**
+    public SchedulerProxy(String name) {
+        super(name);
+        PROXY = this;
+        Simulation.addEntity(this);
+        NetworkModel.getModel().addNewNode(this);
+        Logger.logEntity(this, "Proxy created", this.getClass().getName());
+    }
+
+    /**
      * returns the remaining energy of the grid by aggregating the remaining energy of each node
-	 * that compose it. Remaining energy of a node is derived from the last state of charge update
-	 * message received by the proxy node.
-	 * The value is expressed in Joules
+     * that compose it. Remaining energy of a node is derived from the last state of charge update
+     * message received by the proxy node.
+     * The value is expressed in Joules
      **/
-	public double getCurrentAggregatedNodesEnergy(){
-		double currentAggregatedEnergy = 0;
+    public double getCurrentAggregatedNodesEnergy() {
+        double currentAggregatedEnergy = 0;
         for (Device dev : devices.values()) {
             currentAggregatedEnergy += getJoulesBasedOnLastReportedSOC(dev); //dev.getJoulesBasedOnLastReportedSOC();
         }
-		return currentAggregatedEnergy;
-	}
+        return currentAggregatedEnergy;
+    }
 
 
-	@Override
-	public void startTransfer(Node dst, int id, Object data) {
-		// TODO Auto-generated method stub
-		
-	}
-	
-	@Override
-	public void incomingData(Node scr, int id) {
-		// TODO Auto-generated method stub
-		
-	}
-	
-	@Override
-	public void failReception(Node scr, int id){
-		// TODO Auto-generated method stub
-	}
-	
-	@Override
-	public void onMessageReceived(Message message) {
-		Object data = message.getData();
+    @Override
+    public void startTransfer(Node dst, int id, Object data) {
+        // TODO Auto-generated method stub
 
-		if (data instanceof UpdateMsg) {
+    }
+
+    @Override
+    public void incomingData(Node scr, int id) {
+        // TODO Auto-generated method stub
+
+    }
+
+    @Override
+    public void failReception(Node scr, int id) {
+        // TODO Auto-generated method stub
+    }
+
+    @Override
+    public void onMessageReceived(Message message) {
+        Object data = message.getData();
+
+        if (data instanceof UpdateMsg) {
             UpdateMsg msg = (UpdateMsg) data;
             Device device = devices.get(msg.getNodeId());
             Logger.logEntity(this, "Battery update received from device " + msg.getNodeId() +
@@ -96,7 +96,7 @@ public abstract class SchedulerProxy extends Entity  implements Node, DeviceList
             updateDeviceSOC(device, msg.getPercentageOfRemainingBattery());
             // device.setLastBatteryLevelUpdate(msg.getPercentageOfRemainingBattery());
             JobStatsUtils.registerUpdateMessage(this, (UpdateMsg) data);
-		}
+        }
 
 
         // When we receive a message from a device, we check if we have any data to send to the device we got the
@@ -115,7 +115,7 @@ public abstract class SchedulerProxy extends Entity  implements Node, DeviceList
                     transferInfo.getCurrentIndex(), transferInfo.isLastMessage());
         }
 
-	}
+    }
 
     public void updateDeviceSOC(Device device, int remainingBatteryPercentage) {
         this.deviceDataMap.get(device).lastReportedStateOfCharge = remainingBatteryPercentage;
@@ -156,18 +156,18 @@ public abstract class SchedulerProxy extends Entity  implements Node, DeviceList
      *
      * @param messageSent The message sent.
      */
-	@Override
-	public void onMessageSentAck(Message messageSent) {
-	    // This is the id of the node that received the message.
-	    int destinationNodeId = messageSent.getDestination().getId();
+    @Override
+    public void onMessageSentAck(Message messageSent) {
+        // This is the id of the node that received the message.
+        int destinationNodeId = messageSent.getDestination().getId();
 
-	    DeviceData deviceData = this.deviceDataMap.get(messageSent.getDestination());
-	    TransferInfo transferInfo = deviceData.pendingTransfers.peek();
-	    // Should never be null, but we check just in case.
-	    if (transferInfo != null) {
-	        // If this is the last fragment of the message we are currently transmitting, we remove the current
+        DeviceData deviceData = this.deviceDataMap.get(messageSent.getDestination());
+        TransferInfo transferInfo = deviceData.pendingTransfers.peek();
+        // Should never be null, but we check just in case.
+        if (transferInfo != null) {
+            // If this is the last fragment of the message we are currently transmitting, we remove the current
             // transfer info from the queue.
-	        if (transferInfo.isLastMessage()) {
+            if (transferInfo.isLastMessage()) {
 
                 deviceData.pendingTransfers.remove();
                 deviceData.completedTransfers.add(transferInfo);
@@ -180,7 +180,7 @@ public abstract class SchedulerProxy extends Entity  implements Node, DeviceList
                     JobStatsUtils.setJobTransferCompleted(job, transferInfo.getDestination());
                 }
             } else {
-	            transferInfo.increaseIndex();
+                transferInfo.increaseIndex();
             }
 
             // If we have more data to send to the device (either additional fragments of the previous message or the
@@ -198,46 +198,46 @@ public abstract class SchedulerProxy extends Entity  implements Node, DeviceList
 
             }
         }
-	}
+    }
 
-	@Override
-	public void fail(Message message) {
-		// TODO Auto-generated method stub
-		
-	}
+    @Override
+    public void fail(Message message) {
+        // TODO Auto-generated method stub
 
-	@Override
-	public boolean isOnline() {
-		return true;
-	}
+    }
 
-	private long sendMessage(Node destination, Object data, int messageSize, int offset, boolean lastMessage) {
+    @Override
+    public boolean isOnline() {
+        return true;
+    }
+
+    private long sendMessage(Node destination, Object data, int messageSize, int offset, boolean lastMessage) {
         return NetworkModel.getModel().send(this, destination, destination.getId(),
                 messageSize, data, offset, lastMessage);
     }
 
-	public void remove(Device device) {
-		this.devices.remove(device.getName());
-	}
+    public void remove(Device device) {
+        this.devices.remove(device.getName());
+    }
 
-	public void addDevice(Device device) {
-	    this.devices.put(device.getName(), device);
-	    this.deviceDataMap.put(device, new DeviceData(device.getInitialSOC()));
-	}
+    public void addDevice(Device device) {
+        this.devices.put(device.getName(), device);
+        this.deviceDataMap.put(device, new DeviceData(device.getInitialSOC()));
+    }
 
-	@Override
-	public void onDeviceFail(Node e) {
-		// TODO Auto-generated method stub
-	}
+    @Override
+    public void onDeviceFail(Node e) {
+        // TODO Auto-generated method stub
+    }
 
     /**
      * Queues a {@link Job} for transferring as soon as the channel between the proxy and the device becomes available.
      * Jobs are transferred in FIFO order.
      *
      * @param device The device to which assign the job.
-     * @param job The job to assign.
+     * @param job    The job to assign.
      */
-	protected void queueJobTransferring(final Device device, final Job job){
+    protected void queueJobTransferring(final Device device, final Job job) {
         Logger.logEntity(this, "Job assigned to ", job.getJobId(), device);
         // device.incrementIncomingJobs();
 
@@ -251,17 +251,17 @@ public abstract class SchedulerProxy extends Entity  implements Node, DeviceList
                 JobStatsUtils.transfer(job, device, ETA - currentSimTime, currentSimTime);
             }
         });
-	}
+    }
 
     /**
      * Queues an arbitrary message for transfer to a given recipient.
      *
      * @param destination The receiver of the message.
-     * @param data The data to send.
+     * @param data        The data to send.
      * @param messageSize The size of the data in bytes.
      */
     protected <T> void queueMessageTransfer(Node destination, T data, long messageSize) {
-	    queueMessageTransfer(destination, data, messageSize, null);
+        queueMessageTransfer(destination, data, messageSize, null);
     }
 
     /**
@@ -270,12 +270,12 @@ public abstract class SchedulerProxy extends Entity  implements Node, DeviceList
      * messages exist in the queue).
      *
      * @param destination The receiver of the message.
-     * @param data The data to send.
+     * @param data        The data to send.
      * @param messageSize The size of the data in bytes.
-     * @param delegate A delegate to invoke in case the message is sent immediately.
+     * @param delegate    A delegate to invoke in case the message is sent immediately.
      */
-	protected <T> void queueMessageTransfer(Node destination, T data, long messageSize, OnMessageSent delegate) {
-	    DeviceData deviceData = deviceDataMap.get(destination);
+    protected <T> void queueMessageTransfer(Node destination, T data, long messageSize, OnMessageSent delegate) {
+        DeviceData deviceData = deviceDataMap.get(destination);
 
         // If the pending transfers queue for the given device is not empty, we say the transfer channel is busy.
         boolean channelBusy = !deviceData.pendingTransfers.isEmpty();
@@ -303,13 +303,13 @@ public abstract class SchedulerProxy extends Entity  implements Node, DeviceList
     }
 
     protected void incrementIncomingJobs(Node node) {
-	    this.deviceDataMap.get(node).incomingJobs++;
+        this.deviceDataMap.get(node).incomingJobs++;
     }
 
-	// Getters
+    // Getters
 
     public Collection<Device> getDevices() {
-	    return this.devices.values();
+        return this.devices.values();
     }
 
     @Override
@@ -324,9 +324,9 @@ public abstract class SchedulerProxy extends Entity  implements Node, DeviceList
 
 
     public List<TransferInfo> getTransfersPending() {
-	    List<TransferInfo> transfers = new ArrayList<>();
-	    for (DeviceData deviceData : this.deviceDataMap.values()) {
-	        transfers.addAll(deviceData.pendingTransfers);
+        List<TransferInfo> transfers = new ArrayList<>();
+        for (DeviceData deviceData : this.deviceDataMap.values()) {
+            transfers.addAll(deviceData.pendingTransfers);
         }
 
         return transfers;
@@ -353,7 +353,7 @@ public abstract class SchedulerProxy extends Entity  implements Node, DeviceList
     }
 
     private interface OnMessageSent {
-	    void onMessageSent(Node destination, long ETA);
+        void onMessageSent(Node destination, long ETA);
     }
 
     /**

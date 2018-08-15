@@ -11,32 +11,31 @@ import java.util.concurrent.atomic.AtomicInteger;
  * information about the receiver, the payload of the message that needs to be sent, and the progress of the transfer assuming
  * the information is split into several packages.
  */
-public class TransferInfo<T> implements Comparable<TransferInfo<T>>
-{
+public class TransferInfo<T> implements Comparable<TransferInfo<T>> {
     public static final int PRIORITY_DEFAULT = 0;
     public static final int PRIORITY_HIGH = 1;
 
     private static final AtomicInteger NEXT = new AtomicInteger(0);
 
     private Node destination;
-	private T data;
-	private long messagesCount;
-	private int currentIndex;
-	private int lastMessageSize;
+    private T data;
+    private long messagesCount;
+    private int currentIndex;
+    private int lastMessageSize;
 
-	private int id;
-	private int priority;
-	
-	TransferInfo(Node destination, T data, long messagesCount, int lastMessageSize) {
-		this.destination = destination;
-		this.data = data;
-		this.messagesCount = messagesCount;
-		this.currentIndex = 0;
-		this.lastMessageSize = lastMessageSize;
+    private int id;
+    private int priority;
 
-		id = NEXT.incrementAndGet();
-		priority = PRIORITY_DEFAULT;
-	}
+    TransferInfo(Node destination, T data, long messagesCount, int lastMessageSize) {
+        this.destination = destination;
+        this.data = data;
+        this.messagesCount = messagesCount;
+        this.currentIndex = 0;
+        this.lastMessageSize = lastMessageSize;
+
+        id = NEXT.incrementAndGet();
+        priority = PRIORITY_DEFAULT;
+    }
 
     public int getId() {
         return id;
@@ -63,15 +62,15 @@ public class TransferInfo<T> implements Comparable<TransferInfo<T>>
     }
 
     public boolean isLastMessage() {
-		return currentIndex == messagesCount - 1;
-	}
-
-	public boolean allMessagesSent() {
-	    return currentIndex >= messagesCount;
+        return currentIndex == messagesCount - 1;
     }
 
-	public void increaseIndex() {
-	    currentIndex++;
+    public boolean allMessagesSent() {
+        return currentIndex >= messagesCount;
+    }
+
+    public void increaseIndex() {
+        currentIndex++;
     }
 
     public void setPriority(int priority) {
@@ -86,10 +85,10 @@ public class TransferInfo<T> implements Comparable<TransferInfo<T>>
      * {@link TransferInfo#lastMessageSize} if this is the last message.
      */
     public int getMessageSize(int bufferSize) {
-	    if (isLastMessage()) {
-	        return lastMessageSize;
+        if (isLastMessage()) {
+            return lastMessageSize;
         } else {
-	        return bufferSize;
+            return bufferSize;
         }
     }
 

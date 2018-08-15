@@ -17,34 +17,35 @@ import edu.isistan.simulator.Simulation;
 
 /**
  * Scheduler that implements a job stealing policy.
- *
+ * <p>
  * TODO: add network energy consumption emulation support
  */
 public class StealerProxy extends GridEnergyAwareLoadBalancing {
-	private static final AtomicInteger NEXT_ID = new AtomicInteger(0);
+    private static final AtomicInteger NEXT_ID = new AtomicInteger(0);
 
-	private StealingPolicy policy;
-	private StealingStrategy strategy;
-	private StealingCondition condition = new NoJobsCondition();
-	
-	public StealerProxy(String name) {
-		super(name);
-	}
+    private StealingPolicy policy;
+    private StealingStrategy strategy;
+    private StealingCondition condition = new NoJobsCondition();
 
-	public void steal(Device stealer) {
-		Device victim = this.strategy.getVictim(this, stealer);
-		if(victim == null || !this.condition.canSteal(stealer, victim, this)) return; //TODO: ANALIZAR SI ESTA LINEA INVOLUCRA CONSUMO DE RED O EL CHEQUEO SE REALIZA CON LAS ESTRUCTURAS INTERNAS DE LOS NODOS
+    public StealerProxy(String name) {
+        super(name);
+    }
+
+    public void steal(Device stealer) {
+        Device victim = this.strategy.getVictim(this, stealer);
+        if (victim == null || !this.condition.canSteal(stealer, victim, this))
+            return; //TODO: ANALIZAR SI ESTA LINEA INVOLUCRA CONSUMO DE RED O EL CHEQUEO SE REALIZA CON LAS ESTRUCTURAS INTERNAS DE LOS NODOS
 
         int numberOfJobsToSteal = this.policy.jobsToSteal(stealer, victim);
-		Logger.logEntity(stealer, "The device stole " + numberOfJobsToSteal + " jobs from " + victim);
-		
-		// The proxy sends a steal request to the victim node
+        Logger.logEntity(stealer, "The device stole " + numberOfJobsToSteal + " jobs from " + victim);
+
+        // The proxy sends a steal request to the victim node
         JSMessage jsMessage = new JSMessage(JSMessage.STEAL_REQUEST_TYPE);
-		queueMessageTransfer(victim, jsMessage, Message.STEAL_MSG_SIZE);
-		
-		for(int i = 0; i < numberOfJobsToSteal && victim.isOnline() && stealer.isOnline(); i++) {
-			Job job = victim.removeJob(0);
-			Logger.logEntity(victim, "Sending stolen job (id) to stealer (st)", job, stealer);
+        queueMessageTransfer(victim, jsMessage, Message.STEAL_MSG_SIZE);
+
+        for (int i = 0; i < numberOfJobsToSteal && victim.isOnline() && stealer.isOnline(); i++) {
+            Job job = victim.removeJob(0);
+            Logger.logEntity(victim, "Sending stolen job (id) to stealer (st)", job, stealer);
             queueJobTransferring(stealer, job);
 
             /*
@@ -57,30 +58,30 @@ public class StealerProxy extends GridEnergyAwareLoadBalancing {
                 Logger.logEntity(victim, "Fail to send job (id) to stealer (st): broken link.", job, stealer);
             }
             */
-		}
-	}
+        }
+    }
 
-	public StealingPolicy getPolicy() {
-		return this.policy;
-	}
+    public StealingPolicy getPolicy() {
+        return this.policy;
+    }
 
-	public void setPolicy(StealingPolicy policy) {
-		this.policy = policy;
-		Logger.logEntity(this, "Using StealingPolicy",policy.getClass().getName());
-	}
+    public void setPolicy(StealingPolicy policy) {
+        this.policy = policy;
+        Logger.logEntity(this, "Using StealingPolicy", policy.getClass().getName());
+    }
 
-	public StealingStrategy getStrategy() {
-		return this.strategy;
-	}
+    public StealingStrategy getStrategy() {
+        return this.strategy;
+    }
 
-	public void setStrategy(StealingStrategy strategy) {
-		this.strategy = strategy;
-		Logger.logEntity(this, "Using StealingStrategy",strategy.getClass().getName());
-	}
+    public void setStrategy(StealingStrategy strategy) {
+        this.strategy = strategy;
+        Logger.logEntity(this, "Using StealingStrategy", strategy.getClass().getName());
+    }
 
-	public void setCondition(StealingCondition pol) {
-		this.condition = pol;
-		Logger.logEntity(this, "Using StealingCondition",pol.getClass().getName());
-	}
+    public void setCondition(StealingCondition pol) {
+        this.condition = pol;
+        Logger.logEntity(this, "Using StealingCondition", pol.getClass().getName());
+    }
 
 }

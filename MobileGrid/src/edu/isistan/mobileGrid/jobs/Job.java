@@ -9,74 +9,74 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class Job {
     private static final AtomicInteger NEXT_ID = new AtomicInteger(0);
 
-	private int jobId;
-	private long ops;
-	private int src;
-	private int inputSize;
-	private int outputSize;
-	
-	public Job(long ops, int src, int inputSize, int outputSize) {
-		super();
-		this.jobId = NEXT_ID.incrementAndGet();
-		this.ops = ops;
-		this.src = src;
-		this.inputSize = inputSize;
-		this.outputSize = outputSize;
-	}
+    private int jobId;
+    private long ops;
+    private int src;
+    private int inputSize;
+    private int outputSize;
 
-	public long getOps() {
-		return ops;
-	}
+    public Job(long ops, int src, int inputSize, int outputSize) {
+        super();
+        this.jobId = NEXT_ID.incrementAndGet();
+        this.ops = ops;
+        this.src = src;
+        this.inputSize = inputSize;
+        this.outputSize = outputSize;
+    }
 
-	public void setOps(long ops) {
-		this.ops = ops;
-	}
+    public long getOps() {
+        return ops;
+    }
 
-	public int getSrc() {
-		return src;
-	}
+    public void setOps(long ops) {
+        this.ops = ops;
+    }
 
-	public void setSrc(int src) {
-		this.src = src;
-	}
+    public int getSrc() {
+        return src;
+    }
 
-	public int getInputSize() {
-		return inputSize;
-	}
+    public void setSrc(int src) {
+        this.src = src;
+    }
 
-	public void setInputSize(int inputSize) {
-		this.inputSize = inputSize;
-	}
+    public int getInputSize() {
+        return inputSize;
+    }
 
-	public int getOutputSize() {
-		return outputSize;
-	}
+    public void setInputSize(int inputSize) {
+        this.inputSize = inputSize;
+    }
 
-	public void setOutputSize(int outputSize) {
-		this.outputSize = outputSize;
-	}
+    public int getOutputSize() {
+        return outputSize;
+    }
 
-	public int getJobId() {
-		return jobId;
-	}
+    public void setOutputSize(int outputSize) {
+        this.outputSize = outputSize;
+    }
 
-	@Override
-	public boolean equals(Object obj) {
-		if (obj instanceof Job){
-			return ((Job)obj).jobId == this.jobId;
-		}
-		return false;
-	}
+    public int getJobId() {
+        return jobId;
+    }
 
-	@Override
-	public int hashCode() {
-		return this.jobId;
-	}
+    @Override
+    public boolean equals(Object obj) {
+        if (obj instanceof Job) {
+            return ((Job) obj).jobId == this.jobId;
+        }
+        return false;
+    }
 
-	@Override
-	public String toString() {
-		return "Job [jobId=" + this.jobId + "]";
-	}
-	
+    @Override
+    public int hashCode() {
+        return this.jobId;
+    }
+
+    @Override
+    public String toString() {
+        return "Job [jobId=" + this.jobId + "]";
+    }
+
 
 }

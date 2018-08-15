@@ -56,13 +56,13 @@ public class Message<T> {
     /**
      * Creates a new message to be transferred accross the network.
      *
-     * @param id The ID of the message.
-     * @param source The sender of the message.
-     * @param dst The message's recipient.
-     * @param data The message's payload.
+     * @param id          The ID of the message.
+     * @param source      The sender of the message.
+     * @param dst         The message's recipient.
+     * @param data        The message's payload.
      * @param messageSize The size of the message in bytes.
-     * @param offset The offset of this message's payload. Only relevant when a large payload has to be fragmented accross
-     *               multiple messages.
+     * @param offset      The offset of this message's payload. Only relevant when a large payload has to be fragmented accross
+     *                    multiple messages.
      * @param lastMessage A flag indicating whether this is the last fragment for a given message or not.
      */
     public Message(int id, Node source, Node dst, T data, long messageSize, int offset, boolean lastMessage) {

@@ -4,9 +4,9 @@ import java.sql.SQLException;
 
 import edu.isistan.mobileGrid.persistence.DBEntity.SimulationTuple;
 
-public interface ISimulationPersister extends SQLSessionFactory{
-	
-	public void insertSimulation(SQLSession session, SimulationTuple simulationTuple) throws SQLException;
+public interface ISimulationPersister extends SQLSessionFactory {
 
-	public void updateSimulation(SQLSession session, SimulationTuple simulationTuple) throws SQLException;
+    public void insertSimulation(SQLSession session, SimulationTuple simulationTuple) throws SQLException;
+
+    public void updateSimulation(SQLSession session, SimulationTuple simulationTuple) throws SQLException;
 }

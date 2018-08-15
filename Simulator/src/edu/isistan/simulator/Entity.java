@@ -8,87 +8,88 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public abstract class Entity {
 
-	private static final AtomicInteger NEXT_ID = new AtomicInteger(0);
+    private static final AtomicInteger NEXT_ID = new AtomicInteger(0);
 
     /**
      * A string identifier specified by the user. All entities' names should be unique.
      */
-	private String name;
+    private String name;
 
     /**
      * A system defined numeric ID for internal management purposes. Numerical IDs are defined when loading the entity,
      * there is no guarantee that the same entity will have the same ID in two different simulation runs.
      */
-	private int id;
+    private int id;
 
     /**
      * Flag indicating if this node may process events. If set to false, received events will be ignored.
      */
-	private boolean active = true;
+    private boolean active = true;
 
     /**
      * Resets the static parameters.
      */
-	static void reset() {
-		NEXT_ID.set(0);
-	}
-	
-	public Entity(String name) {
-		super();
-		this.name = name;
-		this.id = NEXT_ID.incrementAndGet();
-	}
+    static void reset() {
+        NEXT_ID.set(0);
+    }
+
+    public Entity(String name) {
+        super();
+        this.name = name;
+        this.id = NEXT_ID.incrementAndGet();
+    }
 
     final void receiveEvent(Event e) {
-		if(isActive())
-			this.processEvent(e);
-	}
-	/**
-	 * This method should be extended for defining a new entity type.
+        if (isActive())
+            this.processEvent(e);
+    }
+
+    /**
+     * This method should be extended for defining a new entity type.
      *
-	 * @param event The event that will be processed.
-	 */
-	public abstract void processEvent(Event event);
+     * @param event The event that will be processed.
+     */
+    public abstract void processEvent(Event event);
 
     /**
      * Gets the entity's numeric ID.
      *
      * @return The entity's numeric ID.
      */
-	public int getId() {
-		return id;
-	}
+    public int getId() {
+        return id;
+    }
 
     /**
      * Gets the entity's string identifier.
      *
      * @return The entity's string identifier.
      */
-	public String getName() {
-		return name;
-	}
+    public String getName() {
+        return name;
+    }
 
     /**
      * Gets whether this entity is active or not.
      *
      * @return Whether this entity is active or not.
      */
-	public boolean isActive() {
-		return active;
-	}
+    public boolean isActive() {
+        return active;
+    }
 
     /**
      * Enables or disables this entity.
      *
      * @param active {@code true} to set this entity as active; {@code false} otherwise.
      */
-	public void setActive(boolean active) {
-		this.active = active;
-	}
+    public void setActive(boolean active) {
+        this.active = active;
+    }
 
-	@Override
-	public String toString() {
-		return this.getName();
-	}
+    @Override
+    public String toString() {
+        return this.getName();
+    }
 
 }

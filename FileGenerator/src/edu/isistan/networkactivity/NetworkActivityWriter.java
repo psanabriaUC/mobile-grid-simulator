@@ -42,7 +42,7 @@ public class NetworkActivityWriter {
 
             long time = 0;
 
-            while(time < this.maxTime) {
+            while (time < this.maxTime) {
                 long timestamp = time + minNetworkActivityInterval + (long) (networkActivityInterval1std * Math.abs(random.nextGaussian()));
                 int packageSize = minPackageSize + (int) (packageSize1std * Math.abs(random.nextGaussian()));
                 MessageDirection direction = random.nextInt(2) == 0 ? MessageDirection.INCOMING : MessageDirection.OUTGOING;

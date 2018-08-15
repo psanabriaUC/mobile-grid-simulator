@@ -13,26 +13,26 @@ import edu.isistan.seas.node.jobstealing.JSSEASExecutionManager;
 
 public class JobStealingFactory implements ManagerFactory {
 
-	@Override
-	public DefaultBatteryManager createBatteryManager(int prof, int charge,
-			long estUptime,long batteryCapacityInJoules) {
-		return new JSSEASBatteryManager(prof, charge, estUptime,batteryCapacityInJoules);
-	}
+    @Override
+    public DefaultBatteryManager createBatteryManager(int prof, int charge,
+                                                      long estUptime, long batteryCapacityInJoules) {
+        return new JSSEASBatteryManager(prof, charge, estUptime, batteryCapacityInJoules);
+    }
 
-	@Override
-	public DefaultExecutionManager createExecutionManager() {
-		return new JSSEASExecutionManager();
-	}
+    @Override
+    public DefaultExecutionManager createExecutionManager() {
+        return new JSSEASExecutionManager();
+    }
 
-	@Override
-	public DefaultNetworkEnergyManager createNetworkEnergyManager(
-			boolean enableNetworkExecutionManager, short wifiSignalStrength) {		
-		return new DefaultNetworkEnergyManager(enableNetworkExecutionManager,wifiSignalStrength);
-	}
+    @Override
+    public DefaultNetworkEnergyManager createNetworkEnergyManager(
+            boolean enableNetworkExecutionManager, short wifiSignalStrength) {
+        return new DefaultNetworkEnergyManager(enableNetworkExecutionManager, wifiSignalStrength);
+    }
 
-	@Override
-	public Device createDevice(String name, BatteryManager bt,	ExecutionManager em, NetworkEnergyManager nem) {		
-		return new JSDevice(name, bt, em, nem);
-	}
+    @Override
+    public Device createDevice(String name, BatteryManager bt, ExecutionManager em, NetworkEnergyManager nem) {
+        return new JSDevice(name, bt, em, nem);
+    }
 
 }

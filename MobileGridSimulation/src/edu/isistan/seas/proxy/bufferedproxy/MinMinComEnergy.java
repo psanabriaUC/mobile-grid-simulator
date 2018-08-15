@@ -11,58 +11,58 @@ import edu.isistan.seas.proxy.RemainingDataTransferingEvaluator;
 
 public class MinMinComEnergy extends BufferedSchedulerProxy {
 
-	public MinMinComEnergy(String name, String bufferValue) {
-		super(name, bufferValue);
-	}
+    public MinMinComEnergy(String name, String bufferValue) {
+        super(name, bufferValue);
+    }
 
-	@Override
-	protected void queueJob(Job job) {
-		int dataTransferRequirement = job.getInputSize() + job.getOutputSize();
-		boolean inserted = false;
-		int queueIndex = 0;
-		while (!inserted) {
-			if (queueIndex < bufferedJobs.size()) {
-				Job currentJob = bufferedJobs.get(queueIndex);
-				int currentJobDataTransferRequirement = currentJob.getInputSize() + currentJob.getOutputSize();
-				if (currentJobDataTransferRequirement > dataTransferRequirement) {
-					bufferedJobs.add(queueIndex, job);
-					inserted = true;
-				} else {
-					queueIndex++;
-				}
-			} else {
-				bufferedJobs.add(job);
-				inserted = true;
-			}
-		}
-	}
+    @Override
+    protected void queueJob(Job job) {
+        int dataTransferRequirement = job.getInputSize() + job.getOutputSize();
+        boolean inserted = false;
+        int queueIndex = 0;
+        while (!inserted) {
+            if (queueIndex < bufferedJobs.size()) {
+                Job currentJob = bufferedJobs.get(queueIndex);
+                int currentJobDataTransferRequirement = currentJob.getInputSize() + currentJob.getOutputSize();
+                if (currentJobDataTransferRequirement > dataTransferRequirement) {
+                    bufferedJobs.add(queueIndex, job);
+                    inserted = true;
+                } else {
+                    queueIndex++;
+                }
+            } else {
+                bufferedJobs.add(job);
+                inserted = true;
+            }
+        }
+    }
 
-	@Override
-	protected void assignBufferedJobs() {
-		DataAssignment.evaluator = new RemainingDataTransferingEvaluator();
-		Comparator<DataAssignment> comp = new DescendingDataAssignmentComparator(DataAssignment.evaluator);
-		Collections.sort(totalDataPerDevice, comp);
+    @Override
+    protected void assignBufferedJobs() {
+        DataAssignment.evaluator = new RemainingDataTransferingEvaluator();
+        Comparator<DataAssignment> comp = new DescendingDataAssignmentComparator(DataAssignment.evaluator);
+        Collections.sort(totalDataPerDevice, comp);
 
-		for (Job dataJob : bufferedJobs) {
-			int assignment = -1;
-			double assignment_remaining_energy = -1;
+        for (Job dataJob : bufferedJobs) {
+            int assignment = -1;
+            double assignment_remaining_energy = -1;
 
-			for (int index = 0; index < totalDataPerDevice.size(); index++) {
-				DataAssignment da = totalDataPerDevice.get(index);
-				double job_energy = da.getDevice().getEnergyWasteInTransferringData(dataJob.getInputSize());
-				job_energy += da.getDevice().getEnergyWasteInTransferringData(dataJob.getOutputSize());
-				double rem_energy = DataAssignment.evaluator.eval(da) - job_energy;
-				if (rem_energy > 0 && rem_energy > assignment_remaining_energy) {
-					assignment = index;
-					assignment_remaining_energy = rem_energy;
-				}
-			}
-			if (assignment != -1) {
-				totalDataPerDevice.get(assignment).scheduleJob(dataJob);
-				Collections.sort(totalDataPerDevice, comp);
-			} else
-				break;
-		}
+            for (int index = 0; index < totalDataPerDevice.size(); index++) {
+                DataAssignment da = totalDataPerDevice.get(index);
+                double job_energy = da.getDevice().getEnergyWasteInTransferringData(dataJob.getInputSize());
+                job_energy += da.getDevice().getEnergyWasteInTransferringData(dataJob.getOutputSize());
+                double rem_energy = DataAssignment.evaluator.eval(da) - job_energy;
+                if (rem_energy > 0 && rem_energy > assignment_remaining_energy) {
+                    assignment = index;
+                    assignment_remaining_energy = rem_energy;
+                }
+            }
+            if (assignment != -1) {
+                totalDataPerDevice.get(assignment).scheduleJob(dataJob);
+                Collections.sort(totalDataPerDevice, comp);
+            } else
+                break;
+        }
 
         for (DataAssignment deviceAssignment : totalDataPerDevice) {
             Device current = deviceAssignment.getDevice();
@@ -98,5 +98,5 @@ public class MinMinComEnergy extends BufferedSchedulerProxy {
 				*/
             }
         }
-	}
+    }
 }

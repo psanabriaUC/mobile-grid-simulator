@@ -27,11 +27,11 @@ public class UserActivityWriter {
     private static Random random = new Random();
 
     private UserActivityWriter(String outputFile,
-                              long maxTime,
-                              long minActivityIntervalDuration,
-                              long maxActivityIntervalDuration,
-                              long minInactivityIntervalDuration,
-                              long maxInactivityIntervalDuration) {
+                               long maxTime,
+                               long minActivityIntervalDuration,
+                               long maxActivityIntervalDuration,
+                               long minInactivityIntervalDuration,
+                               long maxInactivityIntervalDuration) {
         this.outputFile = outputFile;
         this.maxTime = maxTime;
         this.minActivityIntervalDuration = minActivityIntervalDuration;
@@ -56,7 +56,7 @@ public class UserActivityWriter {
 
             long time = 0;
 
-            while(time < this.maxTime) {
+            while (time < this.maxTime) {
                 long screenOnTime = time + (long) ((this.maxInactivityIntervalDuration - this.minInactivityIntervalDuration) * random.nextDouble());
                 long screenOffTime = screenOnTime + (long) ((this.maxActivityIntervalDuration - this.minActivityIntervalDuration) * random.nextDouble());
 

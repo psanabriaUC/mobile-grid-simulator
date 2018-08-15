@@ -17,7 +17,7 @@ public class NodeFileReader {
         List<String> deviceNames = new ArrayList<>();
 
         Scanner scanner = new Scanner(this.file);
-        while(scanner.hasNext()) {
+        while (scanner.hasNext()) {
             String line = scanner.nextLine().trim();
 
             if (line.indexOf("#") == 0 || line.length() == 0) continue;

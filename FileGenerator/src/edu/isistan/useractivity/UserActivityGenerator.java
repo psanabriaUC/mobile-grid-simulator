@@ -95,7 +95,7 @@ public class UserActivityGenerator {
                         .createUserActivityWriter();
 
 
-                    writer.generateConfigurationFile();
+                writer.generateConfigurationFile();
 
             } else {
                 File outputDirectory = new File(outputFile);
@@ -114,7 +114,6 @@ public class UserActivityGenerator {
                 List<String> devices = reader.read();
                 for (String device : devices) {
                     String output = outputFile + "/" + device + ".cnf";
-
 
 
                     UserActivityWriter writer = new UserActivityWriter.Builder()

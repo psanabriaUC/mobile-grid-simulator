@@ -2,33 +2,33 @@ package edu.isistan.nodetranslator;
 
 public class Pair<T, D> {
 
-	private T time;
-	private D data;
-	
-	public Pair(T time, D data) {
-		super();
-		this.time = time;
-		this.data = data;
-	}
+    private T time;
+    private D data;
 
-	public T getTime() {
-		return this.time;
-	}
+    public Pair(T time, D data) {
+        super();
+        this.time = time;
+        this.data = data;
+    }
 
-	public void setTime(T time) {
-		this.time = time;
-	}
+    public T getTime() {
+        return this.time;
+    }
 
-	public D getData() {
-		return this.data;
-	}
+    public void setTime(T time) {
+        this.time = time;
+    }
 
-	public void setData(D data) {
-		this.data = data;
-	}
+    public D getData() {
+        return this.data;
+    }
 
-	@Override
-	public String toString() {
-		return this.time + ";" + this.data;
-	}
+    public void setData(D data) {
+        this.data = data;
+    }
+
+    @Override
+    public String toString() {
+        return this.time + ";" + this.data;
+    }
 }

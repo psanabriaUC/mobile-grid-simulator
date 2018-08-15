@@ -10,13 +10,13 @@ import edu.isistan.mobileGrid.node.NetworkEnergyManager;
 
 public class JSDevice extends Device {
 
-	public JSDevice(String name, BatteryManager bt, ExecutionManager em,
-			NetworkEnergyManager nem) {
-		super(name, bt, em, nem);		
-	}
-	
-	@Override
-	public void startTransfer(Node dst, int id, Object data) {
+    public JSDevice(String name, BatteryManager bt, ExecutionManager em,
+                    NetworkEnergyManager nem) {
+        super(name, bt, em, nem);
+    }
+
+    @Override
+    public void startTransfer(Node dst, int id, Object data) {
         if (data instanceof UpdateMsg) {
             this.networkEnergyManager.onSendData(this, dst, UpdateMsg.STATUS_MSG_SIZE_IN_BYTES);
         } else {
@@ -37,6 +37,6 @@ public class JSDevice extends Device {
             this.networkEnergyManager.onSendData(msg);
 		}
 		*/
-	}	
+    }
 
 }

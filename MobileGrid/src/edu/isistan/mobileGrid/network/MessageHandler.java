@@ -13,7 +13,8 @@ public class MessageHandler<T> {
      *
      * @param message The message received.
      */
-    public void onMessageReceived(Message<T> message) {}
+    public void onMessageReceived(Message<T> message) {
+    }
 
     /**
      * Called after {@link MessageHandler#onMessageReceived(Message)} only if the entire payload of the message
@@ -21,14 +22,16 @@ public class MessageHandler<T> {
      *
      * @param message The message received.
      */
-    public void onMessageFullyReceived(Message<T> message) {}
+    public void onMessageFullyReceived(Message<T> message) {
+    }
 
     /**
      * Called right before sending a message.
      *
      * @param transferInfo The information of the message's transfer state.
      */
-    public void onWillSendMessage(TransferInfo<T> transferInfo) {}
+    public void onWillSendMessage(TransferInfo<T> transferInfo) {
+    }
 
     /**
      * Called when receiving confirmation that a delivered message has been successfully received by the intended
@@ -36,7 +39,8 @@ public class MessageHandler<T> {
      *
      * @param message The message that was sent.
      */
-    public void onMessageSentAck(Message<T> message) {}
+    public void onMessageSentAck(Message<T> message) {
+    }
 
     /**
      * Called after {@link MessageHandler#onMessageSentAck(Message)} only if the entire payload of the message
@@ -44,26 +48,36 @@ public class MessageHandler<T> {
      *
      * @param message The message that was sent.
      */
-    public void onMessageFullySent(Message<T> message) {};
+    public void onMessageFullySent(Message<T> message) {
+    }
+
+    ;
 
     /**
      * Called when a message sent by someone else failed to arrive to this {@link Node}.
      *
      * @param message The message sent.
      */
-    public void onCouldNotReceiveMessage(Message<T> message) {}
+    public void onCouldNotReceiveMessage(Message<T> message) {
+    }
 
     /**
      * Called when this {@link Node} does not have enough power to send a message.
      *
      * @param transferInfo The information of the message's transfer state.
      */
-    public void onCouldNotSendMessage(TransferInfo<T> transferInfo) {};
+    public void onCouldNotSendMessage(TransferInfo<T> transferInfo) {
+    }
+
+    ;
 
     /**
      * Called when a message sent by this {@link Node} could not be received by its intended recipient.
      *
      * @param message The message sent.
      */
-    public void onMessageSentFailedToArrive(Message<T> message) {};
+    public void onMessageSentFailedToArrive(Message<T> message) {
+    }
+
+    ;
 }

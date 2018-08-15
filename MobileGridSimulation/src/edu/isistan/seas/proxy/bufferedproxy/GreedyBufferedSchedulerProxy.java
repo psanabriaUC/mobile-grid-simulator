@@ -16,45 +16,43 @@ import edu.isistan.simulator.Simulation;
 
 public class GreedyBufferedSchedulerProxy extends BufferedSchedulerProxy {
 
-	public GreedyBufferedSchedulerProxy(String name, String bufferValue) {
-		super(name, bufferValue);		
-	}
+    public GreedyBufferedSchedulerProxy(String name, String bufferValue) {
+        super(name, bufferValue);
+    }
 
-	@Override
-	protected void queueJob(Job job) {
-		int dataTransferRequirement = job.getInputSize() + job.getOutputSize();
-		boolean inserted = false;
-		int queueIndex = 0;
-		while (!inserted){
-			if (queueIndex < bufferedJobs.size()){ 
-				Job currentJob = bufferedJobs.get(queueIndex);
-				int currentJobDataTransferRequirement = currentJob.getInputSize()+currentJob.getOutputSize();  
-				if (currentJobDataTransferRequirement > dataTransferRequirement){
-					bufferedJobs.add(queueIndex,job);
-					inserted = true;
-				}
-				else{
-					queueIndex++;
-				}
-			}
-			else{
-				bufferedJobs.add(job);
-				inserted = true;
-			}	
-		}
-	}
+    @Override
+    protected void queueJob(Job job) {
+        int dataTransferRequirement = job.getInputSize() + job.getOutputSize();
+        boolean inserted = false;
+        int queueIndex = 0;
+        while (!inserted) {
+            if (queueIndex < bufferedJobs.size()) {
+                Job currentJob = bufferedJobs.get(queueIndex);
+                int currentJobDataTransferRequirement = currentJob.getInputSize() + currentJob.getOutputSize();
+                if (currentJobDataTransferRequirement > dataTransferRequirement) {
+                    bufferedJobs.add(queueIndex, job);
+                    inserted = true;
+                } else {
+                    queueIndex++;
+                }
+            } else {
+                bufferedJobs.add(job);
+                inserted = true;
+            }
+        }
+    }
 
-	@Override
-	protected void assignBufferedJobs() {
-		//TODO: update node availability and deviceAssignments every time this method is called
-		DataAssignment.evaluator = new RemainingDataTransferingEvaluator();
-		Comparator<DataAssignment> comp = new DescendingDataAssignmentComparator(DataAssignment.evaluator);
-		Collections.sort(totalDataPerDevice, comp);
-				
-		for (Job dataJob : bufferedJobs){
-			totalDataPerDevice.get(FIRST).scheduleJob(dataJob);
-			Collections.sort(totalDataPerDevice, comp);
-		}
+    @Override
+    protected void assignBufferedJobs() {
+        //TODO: update node availability and deviceAssignments every time this method is called
+        DataAssignment.evaluator = new RemainingDataTransferingEvaluator();
+        Comparator<DataAssignment> comp = new DescendingDataAssignmentComparator(DataAssignment.evaluator);
+        Collections.sort(totalDataPerDevice, comp);
+
+        for (Job dataJob : bufferedJobs) {
+            totalDataPerDevice.get(FIRST).scheduleJob(dataJob);
+            Collections.sort(totalDataPerDevice, comp);
+        }
 
         for (DataAssignment deviceAssignment : totalDataPerDevice) {
             Device current = deviceAssignment.getDevice();
@@ -62,6 +60,6 @@ public class GreedyBufferedSchedulerProxy extends BufferedSchedulerProxy {
                 queueJobTransferring(current, job);
             }
         }
-	}
+    }
 
 }

@@ -5,9 +5,9 @@ import edu.isistan.seas.proxy.jobstealing.StealerProxy;
 
 public class AlwaysCondition implements StealingCondition {
 
-	@Override
-	public boolean canSteal(Device stealer, Device victim, StealerProxy proxy) {
-		return true;
-	}
+    @Override
+    public boolean canSteal(Device stealer, Device victim, StealerProxy proxy) {
+        return true;
+    }
 
 }

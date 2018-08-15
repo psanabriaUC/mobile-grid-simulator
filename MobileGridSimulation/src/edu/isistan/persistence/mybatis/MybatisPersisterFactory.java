@@ -8,37 +8,37 @@ import edu.isistan.mobileGrid.persistence.ISimulationPersister;
 
 public class MybatisPersisterFactory implements IPersisterFactory {
 
-	IDevicePersister devicePersister = null;
-	IJobStatsPersister jobStatsPersister = null;
-	IJobTransferedPersister jobTransferedPersister = null;
-	ISimulationPersister simPersister = null;
-	
-	@Override
-	public IDevicePersister getDevicePersister() {		
-		if (devicePersister == null)
-			devicePersister = new DevicePersister();
-		return devicePersister;
-	}
+    IDevicePersister devicePersister = null;
+    IJobStatsPersister jobStatsPersister = null;
+    IJobTransferedPersister jobTransferedPersister = null;
+    ISimulationPersister simPersister = null;
 
-	@Override
-	public IJobStatsPersister getJobStatsPersister() {
-		if (jobStatsPersister == null)
-			jobStatsPersister = new JobStatsPersister();
-		return jobStatsPersister;
-	}
+    @Override
+    public IDevicePersister getDevicePersister() {
+        if (devicePersister == null)
+            devicePersister = new DevicePersister();
+        return devicePersister;
+    }
 
-	@Override
-	public IJobTransferedPersister getJobTransferedPersister() {
-		if (jobTransferedPersister == null)
-			jobTransferedPersister = new JobTransferedPersister();
-		return jobTransferedPersister;
-	}
+    @Override
+    public IJobStatsPersister getJobStatsPersister() {
+        if (jobStatsPersister == null)
+            jobStatsPersister = new JobStatsPersister();
+        return jobStatsPersister;
+    }
 
-	@Override
-	public ISimulationPersister getSimulationPersister() {
-		if (simPersister == null)
-			simPersister = new SimulationPersister();
-		return simPersister;
-	}
+    @Override
+    public IJobTransferedPersister getJobTransferedPersister() {
+        if (jobTransferedPersister == null)
+            jobTransferedPersister = new JobTransferedPersister();
+        return jobTransferedPersister;
+    }
+
+    @Override
+    public ISimulationPersister getSimulationPersister() {
+        if (simPersister == null)
+            simPersister = new SimulationPersister();
+        return simPersister;
+    }
 
 }

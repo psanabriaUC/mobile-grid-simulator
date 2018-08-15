@@ -9,23 +9,23 @@ import edu.isistan.simulator.Logger;
 
 public class RTCScheduler extends DataIntensiveScheduler {
 
-	public RTCScheduler(String name) {
-		super(name);		
-	}
+    public RTCScheduler(String name) {
+        super(name);
+    }
 
-	@Override
-	protected void assignJob(Job job) {
-		
-		Collections.sort(totalDataPerDevice, new DescendingDataAssignmentComparator(new RemainingDataTransferingEvaluator()));
-		DataAssignment d =  totalDataPerDevice.get(FIRST);				
-		d.scheduleJob(job);
-		
-		Device current = totalDataPerDevice.get(FIRST).getDevice();
-		Logger.logEntity(this, "Job assigned to ", job.getJobId() ,current);
-		JobStatsUtils.setJobAssigned(job);
-		incrementIncomingJobs(current);
+    @Override
+    protected void assignJob(Job job) {
 
-		queueJobTransferring(current, job);
+        Collections.sort(totalDataPerDevice, new DescendingDataAssignmentComparator(new RemainingDataTransferingEvaluator()));
+        DataAssignment d = totalDataPerDevice.get(FIRST);
+        d.scheduleJob(job);
+
+        Device current = totalDataPerDevice.get(FIRST).getDevice();
+        Logger.logEntity(this, "Job assigned to ", job.getJobId(), current);
+        JobStatsUtils.setJobAssigned(job);
+        incrementIncomingJobs(current);
+
+        queueJobTransferring(current, job);
 
 		/*
 		long subMessagesCount = (long) Math.ceil(job.getInputSize() / (double) MESSAGE_SIZE);
@@ -53,8 +53,8 @@ public class RTCScheduler extends DataIntensiveScheduler {
 		lastPendingTransfers.put(current, transferInfo);
 
 		*/
-		
-		jobAssignments.put(job, d);
-	}
+
+        jobAssignments.put(job, d);
+    }
 
 }

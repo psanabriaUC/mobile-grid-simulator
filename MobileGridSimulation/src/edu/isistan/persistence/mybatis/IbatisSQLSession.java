@@ -4,25 +4,25 @@ import org.apache.ibatis.session.SqlSession;
 import edu.isistan.mobileGrid.persistence.SQLSession;
 
 
-public class IbatisSQLSession implements SQLSession{
-	
-	SqlSession sessionInstance;
+public class IbatisSQLSession implements SQLSession {
 
-	public IbatisSQLSession(SqlSession sessionInstance) {
-		this.sessionInstance = sessionInstance;
-	}
+    SqlSession sessionInstance;
 
-	public void close() {
-		sessionInstance.close();
-		
-	}
+    public IbatisSQLSession(SqlSession sessionInstance) {
+        this.sessionInstance = sessionInstance;
+    }
 
-	public void commit() {
-		sessionInstance.commit(true);		
-	}
-	
-	public SqlSession unwrap(){
-		return sessionInstance;
-	}
+    public void close() {
+        sessionInstance.close();
+
+    }
+
+    public void commit() {
+        sessionInstance.commit(true);
+    }
+
+    public SqlSession unwrap() {
+        return sessionInstance;
+    }
 
 }
