@@ -7,12 +7,16 @@ import edu.isistan.mobileGrid.node.NetworkEnergyManager;
 import edu.isistan.seas.node.DefaultBatteryManager;
 import edu.isistan.seas.node.DefaultExecutionManager;
 import edu.isistan.seas.node.DefaultNetworkEnergyManager;
+import edu.isistan.seas.node.InfiniteBatteryManager;
 
 public class DefaultManagerFactory implements ManagerFactory {
 
     @Override
-    public DefaultBatteryManager createBatteryManager(int prof, int charge, long estUptime, long batteryCapacityInJoules) {
-        return new DefaultBatteryManager(prof, charge, estUptime, batteryCapacityInJoules);
+    public DefaultBatteryManager createBatteryManager(int prof, int charge, long estUptime, long batteryCapacityInJoules, boolean isInfinite) {
+        if (isInfinite)
+            return new InfiniteBatteryManager(prof, charge, estUptime, batteryCapacityInJoules);
+        else
+            return new DefaultBatteryManager(prof, charge, estUptime, batteryCapacityInJoules);
     }
 
     @Override

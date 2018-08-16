@@ -791,14 +791,13 @@ public class JobStatsUtils {
     /**
      * Remove comment for testing purposes
      */
-    public static String printNodesPercentageOfEnergyWasteInNetworkActivity() {
+    public static void printNodesPercentageOfEnergyWasteInNetworkActivity() {
         for (Node device : netStatsPerNode.keySet()) {
             if (device != null && device.runsOnBattery()) {
                 Device dev = (Device) device;
                 System.out.println("Device " + dev.getName() + " " + dev.getEnergyPercentageWastedInNetworkActivity());
             }
         }
-        return null;
     }
 
     public static int getTotalStealings() {

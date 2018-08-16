@@ -234,7 +234,7 @@ public class Simulation {
         System.out.print("Percent of transfered data:");
         System.out.println(JobStatsUtils.getPercentOfTransferedData());
         System.out.println("*****************************");
-        System.out.println(JobStatsUtils.printNodesPercentageOfEnergyWasteInNetworkActivity());
+        JobStatsUtils.printNodesPercentageOfEnergyWasteInNetworkActivity();
         System.out.println("Jobs states summary");
         System.out.println("-------------------");
         JobStatsUtils.printJobStatesSummary();

@@ -15,7 +15,7 @@ public class JobStealingFactory implements ManagerFactory {
 
     @Override
     public DefaultBatteryManager createBatteryManager(int prof, int charge,
-                                                      long estUptime, long batteryCapacityInJoules) {
+                                                      long estUptime, long batteryCapacityInJoules, boolean isInfinite) {
         return new JSSEASBatteryManager(prof, charge, estUptime, batteryCapacityInJoules);
     }
 

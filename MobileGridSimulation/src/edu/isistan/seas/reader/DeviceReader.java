@@ -50,21 +50,28 @@ public class DeviceReader {
         IDevicePersister devicePersister = persisterFactory.getDevicePersister();
         int sim_id = SimReader.getSim_id();
         // Expected format for each line in the configuration file:
-        // [device_name];[device_flops];[max_concurrent_active_jobs_supported](;[battery_capacity_in_joules])?
+        // [device_name];[device_flops];[max_concurrent_active_jobs_supported](;[battery_capacity_in_joules|Inf])?
         while (this.line != null) {
             StringTokenizer st = new StringTokenizer(line, ";");
             String nodeId = st.nextToken();
             long flops = Long.parseLong(st.nextToken());
             int maxActiveJobs = Integer.parseInt(st.nextToken());
             long batteryCapacityInJoules = Long.MAX_VALUE;
+            boolean isInfinite = false;
+
             if (st.hasMoreTokens()) {
-                batteryCapacityInJoules = Long.parseLong(st.nextToken());
+                String token = st.nextToken();
+                if (token.toLowerCase().equals("inf")) {
+                    isInfinite = true;
+                } else {
+                    batteryCapacityInJoules = Long.parseLong(token);
+                }
             } else {
                 batteryCapacityUndefined = true;
             }
 
             DeviceLoader loader = new DeviceLoader(nodeId, flops, maxActiveJobs, networkEnergyManagementEnable,
-                    batteryCapacityInJoules);
+                    batteryCapacityInJoules, isInfinite);
             DeviceTuple tuple = new DeviceTuple(nodeId, flops, batteryCapacityInJoules, sim_id);
             devicePersister.saveDeviceIntoMemory(nodeId, tuple);
 

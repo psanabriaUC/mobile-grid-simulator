@@ -109,6 +109,11 @@ public class DeviceLoader extends Thread {
      */
     private short wifiSignalStrength;
 
+    /**
+     * Represents if the node is using a perpetual energy source
+     */
+    private boolean isInfinite;
+
     public DeviceLoader(String nodeName, long flops, int maxActiveJobs, boolean networkEnergyManagerEnable, short wifiSignalStrength) {
         this.nodeName = nodeName;
         this.flops = flops;
@@ -134,14 +139,17 @@ public class DeviceLoader extends Thread {
      * @param maxActiveJobs                 The maximum amount of jobs the device can concurrently handle.
      * @param networkEnergyManagementEnable Flag to specify whether energy spent during network communication should be simulated.
      * @param batteryCapacityInJoules       Battery capacity in joules.
+     * @param isInfinite                    Is Battery infinite? (Edge server)
      */
     public DeviceLoader(String nodeName, long flops, int maxActiveJobs,
-                        boolean networkEnergyManagementEnable, long batteryCapacityInJoules) {
+                        boolean networkEnergyManagementEnable, long batteryCapacityInJoules,
+                        boolean isInfinite) {
         this.nodeName = nodeName;
         this.flops = flops;
         this.maxActiveJobs = maxActiveJobs;
         this.networkEnergyManagerEnable = networkEnergyManagementEnable;
         this.setBatteryCapacityInJoules(batteryCapacityInJoules);
+        this.isInfinite = isInfinite;
     }
 
     /**
@@ -159,7 +167,7 @@ public class DeviceLoader extends Thread {
         // List<ProfileData> batteryFullScreenOnProfileData = this.readBattery(this.batteryFullScreenOffFile);
 
         DefaultNetworkEnergyManager networkEnergyManager = MANAGER_FACTORY.createNetworkEnergyManager(networkEnergyManagerEnable, wifiSignalStrength);
-        DefaultBatteryManager batteryManager = MANAGER_FACTORY.createBatteryManager(3, startCharge, startUptime, batteryCapacityInJoules);
+        DefaultBatteryManager batteryManager = MANAGER_FACTORY.createBatteryManager(3, startCharge, startUptime, batteryCapacityInJoules, isInfinite);
 
         for (ProfileData data : batteryBaseProfileData)
             batteryManager.addProfileData(0, data);
