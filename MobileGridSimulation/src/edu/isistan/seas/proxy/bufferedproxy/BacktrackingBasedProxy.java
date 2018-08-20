@@ -7,7 +7,7 @@ import edu.isistan.mobileGrid.jobs.Job;
 import edu.isistan.mobileGrid.jobs.JobStatsUtils;
 import edu.isistan.mobileGrid.node.Device;
 import edu.isistan.mobileGrid.node.SchedulerProxy;
-import edu.isistan.seas.node.DefaultBatteryManager;
+import edu.isistan.seas.node.DefaultFiniteBatteryManager;
 import edu.isistan.seas.proxy.RSSIDataJoulesEvaluator;
 
 public class BacktrackingBasedProxy extends BufferedSchedulerProxy {
@@ -127,7 +127,7 @@ public class BacktrackingBasedProxy extends BufferedSchedulerProxy {
 
             //calculating jobs transfered
             double devicePerOfAvailableEnergy = (double) (SchedulerProxy.PROXY.getLastReportedSOC(device) /
-                    DefaultBatteryManager.PROFILE_ONE_PERCENT_REPRESENTATION);
+                    DefaultFiniteBatteryManager.PROFILE_ONE_PERCENT_REPRESENTATION);
             double deviceJoulesAvailable = (devicePerOfAvailableEnergy * device.getTotalBatteryCapacityInJoules() /
                     (double) 100);
             if ((deviceJoulesAvailable - devJoulesConsumed) >= (0d)) {

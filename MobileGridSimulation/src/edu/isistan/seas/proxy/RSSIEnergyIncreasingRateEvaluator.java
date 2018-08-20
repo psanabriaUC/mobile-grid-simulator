@@ -1,14 +1,14 @@
 package edu.isistan.seas.proxy;
 
 import edu.isistan.mobileGrid.node.Device;
-import edu.isistan.seas.node.DefaultBatteryManager;
+import edu.isistan.seas.node.DefaultFiniteBatteryManager;
 
 public class RSSIEnergyIncreasingRateEvaluator implements DataAssignmentEvaluatorIF {
 
     @Override
     public double eval(DataAssignment da) {
         return (double) da.getDevice().getWifiRSSI() + (double) (da.getDevice().getBatteryLevel() /
-                DefaultBatteryManager.PROFILE_ONE_PERCENT_REPRESENTATION) -
+                DefaultFiniteBatteryManager.PROFILE_ONE_PERCENT_REPRESENTATION) -
                 ((((da.getMbToBeReceived() + da.getMbToBeSend()) * 1024) / 100) * getRSSIEnergyConsumptionRate(da.getDevice()));
     }
 

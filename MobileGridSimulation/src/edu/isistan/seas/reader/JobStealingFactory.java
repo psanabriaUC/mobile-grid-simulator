@@ -20,7 +20,7 @@ public class JobStealingFactory implements ManagerFactory {
     }
 
     @Override
-    public DefaultExecutionManager createExecutionManager() {
+    public DefaultExecutionManager createExecutionManager(boolean isInfinite) {
         return new JSSEASExecutionManager();
     }
 

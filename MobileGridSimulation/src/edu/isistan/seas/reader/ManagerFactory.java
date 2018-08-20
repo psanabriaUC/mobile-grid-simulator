@@ -10,12 +10,12 @@ import edu.isistan.seas.node.DefaultNetworkEnergyManager;
 
 public interface ManagerFactory {
 
-    public DefaultBatteryManager createBatteryManager(int prof, int charge, long estUptime, long batteryCapacityInJoules, boolean isInfinite);
+    DefaultBatteryManager createBatteryManager(int prof, int charge, long estUptime, long batteryCapacityInJoules, boolean isInfinite);
 
-    public DefaultExecutionManager createExecutionManager();
+    DefaultExecutionManager createExecutionManager(boolean isInfinite);
 
-    public DefaultNetworkEnergyManager createNetworkEnergyManager(boolean enableNetworkExecutionManager, short wifiSignalString);
+    DefaultNetworkEnergyManager createNetworkEnergyManager(boolean enableNetworkExecutionManager, short wifiSignalString);
 
-    public Device createDevice(String name, BatteryManager bt, ExecutionManager em, NetworkEnergyManager nem);
+    Device createDevice(String name, BatteryManager bt, ExecutionManager em, NetworkEnergyManager nem);
 
 }

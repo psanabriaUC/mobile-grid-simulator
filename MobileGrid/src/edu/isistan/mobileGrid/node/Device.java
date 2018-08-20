@@ -32,6 +32,7 @@ public class Device extends Entity implements Node, DeviceListener {
     public static final int EVENT_TYPE_STATUS_NOTIFICATION = 4;
     public static final int EVENT_TYPE_SCREEN_ACTIVITY = 5;
     public static final int EVENT_NETWORK_ACTIVITY = 6;
+    public static final int EVENT_TYPE_SHUTDOWN = 7;
 
     /* Size of message buffer for transfers in bytes */
     public static int MESSAGES_BUFFER_SIZE = 1024 * 1024; // 1mb
@@ -144,6 +145,7 @@ public class Device extends Entity implements Node, DeviceListener {
      * @param message The message that just arrived. Note that this message's payload may represent only a fraction
      *                of the size of a full message in case it is too big to be sent at once.
      */
+    @SuppressWarnings("unchecked")
     @Override
     public void onMessageReceived(Message<?> message) {
         isReceiving = false;
@@ -285,6 +287,9 @@ public class Device extends Entity implements Node, DeviceListener {
                 Event.NetworkActivityEventData eventData = (Event.NetworkActivityEventData) event.getData();
                 queueMessageTransfer(CloudNode.getInstance(), null, eventData.getMessageSize(), TransferInfo.PRIORITY_HIGH);
                 // queueMessageTransfer();
+                break;
+            case Device.EVENT_TYPE_SHUTDOWN:
+                batteryManager.onBatteryEvent(0);
                 break;
         }
     }

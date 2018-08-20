@@ -1,57 +1,115 @@
 package edu.isistan.seas.node;
 
-public class InfiniteBatteryManager extends DefaultBatteryManager {
+import edu.isistan.mobileGrid.node.Device;
+import edu.isistan.simulator.Event;
+import edu.isistan.simulator.Logger;
+import edu.isistan.simulator.Simulation;
 
-    /**
-     * Builds a standard battery manager with default capabilities to emulate battery discharges when idle, executing
-     * CPU intensive jobs, and transferring data over a network.
-     *
-     * @param prof                    Number of trace data sets to emulate battery discharge under different workloads.
-     * @param charge                  Initial state of charge of the device's battery (0 - 1000000).
-     * @param estUptime               Estimated time until discharge in milliseconds.
-     * @param batteryCapacityInJoules Battery capacity in Joules.
-     */
-    public InfiniteBatteryManager(int prof, int charge, long estUptime, long batteryCapacityInJoules) {
-        super(prof, charge, estUptime, batteryCapacityInJoules);
-    }
+public class InfiniteBatteryManager implements DefaultBatteryManager {
+    private static final int MAX_CHARGE = 1000000;
+    private Device device;
+    private long startTime;
+    private Event lastAddedEvent;
+    private DefaultExecutionManager executionManager;
+    private long lastMeasurement;
 
-    @Override
-    public void onNetworkEnergyConsumption(double decreasingPercentageValue) {
-        super.onNetworkEnergyConsumption(decreasingPercentageValue);
-    }
-
-    @Override
-    public void onBatteryEvent(int level) {
-        super.onBatteryEvent(level);
-    }
-
-    @Override
-    public void onUserActivityEvent(boolean screenOn) {
-        super.onUserActivityEvent(screenOn);
+    public InfiniteBatteryManager() {
     }
 
     @Override
     public void onBeginExecutingJobs() {
-        super.onBeginExecutingJobs();
     }
 
     @Override
     public void onStopExecutingJobs() {
-        super.onStopExecutingJobs();
+    }
+
+    @Override
+    public void onNetworkEnergyConsumption(double decreasedBatteryPercentage) {
+
+    }
+
+    @Override
+    public void onBatteryEvent(int level) {
+        if (level <= 0) {
+            System.out.println("yei");
+            this.lastMeasurement = Simulation.getTime();
+            this.device.onBatteryDepletion();
+        }
+    }
+
+    @Override
+    public void onUserActivityEvent(boolean flag) {
+
+    }
+
+    @Override
+    public int getCurrentBattery() {
+        return Integer.MAX_VALUE;
+    }
+
+    @Override
+    public long getBatteryCapacityInJoules() {
+        return Integer.MAX_VALUE;
+    }
+
+    @Override
+    public long getEstimatedUptime() {
+        return Integer.MAX_VALUE;
     }
 
     @Override
     public void startWorking() {
-        super.startWorking();
+        this.lastMeasurement = Simulation.getTime();
+        this.startTime = Simulation.getTime();
+        this.lastAddedEvent = Event.createEvent(Event.NO_SOURCE, this.lastMeasurement, this.device.getId(),
+                Device.EVENT_TYPE_BATTERY_UPDATE, MAX_CHARGE);
+        Simulation.addEvent(this.lastAddedEvent);
+        Logger.logEntity(device, "Device started");
     }
 
     @Override
     public void shutdown() {
-        super.shutdown();
+        Simulation.removeEvent(this.lastAddedEvent);
+    }
+
+    @Override
+    public long getStartTime() {
+        return startTime;
+    }
+
+    @Override
+    public int getInitialSOC() {
+        return MAX_CHARGE;
+    }
+
+    @Override
+    public double getCurrentSOC() {
+        return MAX_CHARGE;
     }
 
     @Override
     public void addProfileData(int prof, ProfileData dat) {
-        super.addProfileData(prof, dat);
+
+    }
+
+    @Override
+    public DefaultExecutionManager getSEASExecutionManager() {
+        return executionManager;
+    }
+
+    @Override
+    public void setSEASExecutionManager(DefaultExecutionManager seasEM) {
+        this.executionManager = seasEM;
+    }
+
+    @Override
+    public Device getDevice() {
+        return this.device;
+    }
+
+    @Override
+    public void setDevice(Device device) {
+        this.device = device;
     }
 }
