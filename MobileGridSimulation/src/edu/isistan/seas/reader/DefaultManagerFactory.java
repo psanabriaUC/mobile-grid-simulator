@@ -17,11 +17,8 @@ public class DefaultManagerFactory implements ManagerFactory {
     }
 
     @Override
-    public DefaultExecutionManager createExecutionManager(boolean isInfinite) {
-        if (isInfinite)
-            return new InfiniteExecutionManager();
-        else
-            return new DefaultExecutionManager();
+    public DefaultExecutionManager createExecutionManager() {
+        return new DefaultExecutionManager();
     }
 
     @Override

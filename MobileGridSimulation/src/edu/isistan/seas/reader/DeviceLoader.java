@@ -179,10 +179,12 @@ public class DeviceLoader extends Thread {
         for (ProfileData data : batteryFullScreenOffProfileData)
             batteryManager.addProfileData(2, data);
 
-        DefaultExecutionManager executionManager = MANAGER_FACTORY.createExecutionManager(isInfinite);
+        DefaultExecutionManager executionManager = MANAGER_FACTORY.createExecutionManager();
         executionManager.setMips(this.flops);
 
         Device device = MANAGER_FACTORY.createDevice(this.nodeName, batteryManager, executionManager, networkEnergyManager);
+
+        device.setUseBattery(!isInfinite);
 
         simLock.lock();
         NetworkModel.getModel().addNewNode(device);

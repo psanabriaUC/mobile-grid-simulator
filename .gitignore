@@ -54,3 +54,4 @@ fabric.properties
 .metadata
 bin/
 tmp/
+simulationdb.properties

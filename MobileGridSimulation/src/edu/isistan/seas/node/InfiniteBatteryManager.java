@@ -32,7 +32,6 @@ public class InfiniteBatteryManager implements DefaultBatteryManager {
     @Override
     public void onBatteryEvent(int level) {
         if (level <= 0) {
-            System.out.println("yei");
             this.lastMeasurement = Simulation.getTime();
             this.device.onBatteryDepletion();
         }

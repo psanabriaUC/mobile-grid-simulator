@@ -1,8 +1,5 @@
 package edu.isistan.gridgain.spi.loadbalacing.energyaware;
 
-import java.util.Collection;
-import java.util.Iterator;
-
 import edu.isistan.mobileGrid.jobs.Job;
 import edu.isistan.mobileGrid.jobs.JobStatsUtils;
 import edu.isistan.mobileGrid.node.Device;

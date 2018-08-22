@@ -12,7 +12,7 @@ public interface ManagerFactory {
 
     DefaultBatteryManager createBatteryManager(int prof, int charge, long estUptime, long batteryCapacityInJoules, boolean isInfinite);
 
-    DefaultExecutionManager createExecutionManager(boolean isInfinite);
+    DefaultExecutionManager createExecutionManager();
 
     DefaultNetworkEnergyManager createNetworkEnergyManager(boolean enableNetworkExecutionManager, short wifiSignalString);
 

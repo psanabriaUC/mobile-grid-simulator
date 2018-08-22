@@ -107,6 +107,7 @@ public class Device extends Entity implements Node, DeviceListener {
      * Default message handler for unspecified message subtypes. Does nothing.
      */
     private MessageHandler defaultMessageHandler = new MessageHandler();
+    private boolean useBattery;
 
     /**
      * when this flag is true the device informs its State Of Charge every time
@@ -118,6 +119,7 @@ public class Device extends Entity implements Node, DeviceListener {
         this.batteryManager = bt;
         this.executionManager = em;
         this.networkEnergyManager = nem;
+        this.useBattery = true;
     }
 
     /**
@@ -272,7 +274,7 @@ public class Device extends Entity implements Node, DeviceListener {
                 queueMessageTransfer(SchedulerProxy.PROXY, updateMsg, UpdateMsg.STATUS_MSG_SIZE_IN_BYTES);
 
                 // plan the next status notification event
-                if (Device.STATUS_NOTIFICATION_TIME_FREQ > 0) {
+                if (Device.STATUS_NOTIFICATION_TIME_FREQ > 0 && useBattery) {
                     long nextNotificationTime = Simulation.getTime() + Device.STATUS_NOTIFICATION_TIME_FREQ;
                     this.nextStatusNotificationEvent = Event.createEvent(Event.NO_SOURCE, nextNotificationTime,
                             this.getId(), Device.EVENT_TYPE_STATUS_NOTIFICATION, null);
@@ -412,7 +414,11 @@ public class Device extends Entity implements Node, DeviceListener {
 
     @Override
     public boolean runsOnBattery() {
-        return true;
+        return useBattery;
+    }
+
+    public void setUseBattery(boolean useBattery) {
+        this.useBattery = useBattery;
     }
 
     public List<Job> getFinishedJobTransfersCompleted() {
