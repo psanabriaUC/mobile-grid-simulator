@@ -182,9 +182,7 @@ public class DeviceLoader extends Thread {
         DefaultExecutionManager executionManager = MANAGER_FACTORY.createExecutionManager();
         executionManager.setMips(this.flops);
 
-        Device device = MANAGER_FACTORY.createDevice(this.nodeName, batteryManager, executionManager, networkEnergyManager);
-
-        device.setUseBattery(!isInfinite);
+        Device device = MANAGER_FACTORY.createDevice(this.nodeName, batteryManager, executionManager, networkEnergyManager, isInfinite);
 
         simLock.lock();
         NetworkModel.getModel().addNewNode(device);

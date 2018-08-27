@@ -16,6 +16,6 @@ public interface ManagerFactory {
 
     DefaultNetworkEnergyManager createNetworkEnergyManager(boolean enableNetworkExecutionManager, short wifiSignalString);
 
-    Device createDevice(String name, BatteryManager bt, ExecutionManager em, NetworkEnergyManager nem);
+    Device createDevice(String name, BatteryManager bt, ExecutionManager em, NetworkEnergyManager nem, boolean isInfinite);
 
 }

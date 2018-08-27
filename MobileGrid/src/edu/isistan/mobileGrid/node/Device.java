@@ -114,12 +114,20 @@ public class Device extends Entity implements Node, DeviceListener {
      * it decreases in at least one percentage w.r.t the last SOC informed
      */
     //private boolean informSOC = true;
-    public Device(String name, BatteryManager bt, ExecutionManager em, NetworkEnergyManager nem) {
+    public Device(String name, BatteryManager bt, ExecutionManager em, NetworkEnergyManager nem, boolean useBattery) {
         super(name);
         this.batteryManager = bt;
         this.executionManager = em;
         this.networkEnergyManager = nem;
-        this.useBattery = true;
+        this.useBattery = useBattery;
+    }
+
+    /**
+     * when this flag is true the device informs its State Of Charge every time
+     * it decreases in at least one percentage w.r.t the last SOC informed
+     */
+    public Device(String name, BatteryManager bt, ExecutionManager em, NetworkEnergyManager nem) {
+        this(name, bt, em, nem, true);
     }
 
     /**
@@ -415,10 +423,6 @@ public class Device extends Entity implements Node, DeviceListener {
     @Override
     public boolean runsOnBattery() {
         return useBattery;
-    }
-
-    public void setUseBattery(boolean useBattery) {
-        this.useBattery = useBattery;
     }
 
     public List<Job> getFinishedJobTransfersCompleted() {

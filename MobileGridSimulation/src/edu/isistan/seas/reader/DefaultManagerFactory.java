@@ -11,7 +11,7 @@ public class DefaultManagerFactory implements ManagerFactory {
     @Override
     public DefaultBatteryManager createBatteryManager(int prof, int charge, long estUptime, long batteryCapacityInJoules, boolean isInfinite) {
         if (isInfinite)
-            return new InfiniteBatteryManager();
+            return new DefaultInfiniteBatteryManager();
         else
             return new DefaultFiniteBatteryManager(prof, charge, estUptime, batteryCapacityInJoules);
     }
@@ -27,8 +27,8 @@ public class DefaultManagerFactory implements ManagerFactory {
     }
 
     @Override
-    public Device createDevice(String name, BatteryManager bt, ExecutionManager em, NetworkEnergyManager nem) {
-        return new Device(name, bt, em, nem);
+    public Device createDevice(String name, BatteryManager bt, ExecutionManager em, NetworkEnergyManager nem, boolean isInfinite) {
+        return new Device(name, bt, em, nem, !isInfinite);
     }
 
 

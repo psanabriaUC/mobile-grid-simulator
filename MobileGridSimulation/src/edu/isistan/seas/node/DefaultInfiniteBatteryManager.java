@@ -5,7 +5,7 @@ import edu.isistan.simulator.Event;
 import edu.isistan.simulator.Logger;
 import edu.isistan.simulator.Simulation;
 
-public class InfiniteBatteryManager implements DefaultBatteryManager {
+public class DefaultInfiniteBatteryManager implements DefaultBatteryManager {
     private static final int MAX_CHARGE = 1000000;
     private Device device;
     private long startTime;
@@ -13,7 +13,7 @@ public class InfiniteBatteryManager implements DefaultBatteryManager {
     private DefaultExecutionManager executionManager;
     private long lastMeasurement;
 
-    public InfiniteBatteryManager() {
+    public DefaultInfiniteBatteryManager() {
     }
 
     @Override

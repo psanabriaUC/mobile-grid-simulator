@@ -31,7 +31,7 @@ public class JobStealingFactory implements ManagerFactory {
     }
 
     @Override
-    public Device createDevice(String name, BatteryManager bt, ExecutionManager em, NetworkEnergyManager nem) {
+    public Device createDevice(String name, BatteryManager bt, ExecutionManager em, NetworkEnergyManager nem, boolean isInfinite) {
         return new JSDevice(name, bt, em, nem);
     }
 
