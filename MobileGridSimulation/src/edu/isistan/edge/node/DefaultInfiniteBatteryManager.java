@@ -1,6 +1,9 @@
-package edu.isistan.seas.node;
+package edu.isistan.edge.node;
 
 import edu.isistan.mobileGrid.node.Device;
+import edu.isistan.seas.node.DefaultBatteryManager;
+import edu.isistan.seas.node.DefaultExecutionManager;
+import edu.isistan.seas.node.ProfileData;
 import edu.isistan.simulator.Event;
 import edu.isistan.simulator.Logger;
 import edu.isistan.simulator.Simulation;

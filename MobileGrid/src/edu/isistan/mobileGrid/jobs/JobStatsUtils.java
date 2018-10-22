@@ -131,6 +131,7 @@ public class JobStatsUtils {
         jobStats.setFinishTime(Simulation.getTime());
         jobStats.setExecutedMips(job.getOps());
         jobStats.setSuccess(true);
+        jobStats.setFromEdge(job.isFromEdge());
     }
 
     /**
@@ -219,6 +220,7 @@ public class JobStatsUtils {
         int queued = 0;
         int scheduledButInterrumptedTransfer = 0;
         int rejected = 0;
+        int completedOnEdge = 0;
         double totalGIP = 0;
 
         for (Job job : stats.keySet()) {
@@ -234,6 +236,8 @@ public class JobStatsUtils {
                     if (js.wasReceivedByAWorkerNode()) {
                         if (js.isCompleted()) {
                             completed++;
+                            if (js.isFromEdge())
+                                ++completedOnEdge;
                         } else {
                             if (js.executedSuccessButNotTransferedBack()) {
                                 finishedButNotCompleted++;
@@ -258,6 +262,9 @@ public class JobStatsUtils {
         System.out.println("Rejected:" + rejected);
         System.out.println("Scheduled but transfer interrupted:" + scheduledButInterrumptedTransfer);
         System.out.println("Completed jobs:" + completed);
+        if (completedOnEdge > 0) {
+            System.out.println("Completed jobs on edge: " + completedOnEdge);
+        }
         System.out.println("FinishedButNotCompleted jobs:" + finishedButNotCompleted);
         System.out.println("StartedButNotFinished jobs:" + startedButNotFinished);
         System.out.println("Queued jobs:" + queued);
@@ -306,6 +313,14 @@ public class JobStatsUtils {
         int t = 0;
         for (Job job : stats.keySet())
             if (stats.get(job).isCompleted())
+                t++;
+        return t;
+    }
+
+    public static int getCompletedJobsInEdge() {
+        int t = 0;
+        for (Job job : stats.keySet())
+            if (stats.get(job).isCompleted() && stats.get(job).isFromEdge())
                 t++;
         return t;
     }

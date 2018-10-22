@@ -10,6 +10,7 @@ public class JobStats {
     protected boolean success = false;
     protected boolean successTrasferBack = false;
     protected boolean rejected = false;
+    protected boolean fromEdge = false;
     //private boolean transferBackInitiated = false;
 
     /**this list indicates whether a job transferring was completed or not, i.e., received by the destiny node*/
@@ -250,6 +251,14 @@ public class JobStats {
 
     public void setExecutedMips(long executedMips) {
         this.executedMips = executedMips;
+    }
+
+    public boolean isFromEdge() {
+        return fromEdge;
+    }
+
+    public void setFromEdge(boolean fromEdge) {
+        this.fromEdge = fromEdge;
     }
 
     protected class TransferStatus {

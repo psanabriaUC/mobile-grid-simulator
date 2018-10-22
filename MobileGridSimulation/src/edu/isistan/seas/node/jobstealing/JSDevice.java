@@ -15,6 +15,11 @@ public class JSDevice extends Device {
         super(name, bt, em, nem);
     }
 
+    public JSDevice(String name, BatteryManager bt, ExecutionManager em,
+                    NetworkEnergyManager nem, boolean useBattery) {
+        super(name, bt, em, nem, useBattery);
+    }
+
     @Override
     public void startTransfer(Node dst, int id, Object data) {
         if (data instanceof UpdateMsg) {

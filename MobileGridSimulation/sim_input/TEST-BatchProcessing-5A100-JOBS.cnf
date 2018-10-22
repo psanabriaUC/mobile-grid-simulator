@@ -1,10 +1,9 @@
 ;networkEnergyManagementEnable: true
 
 ;nodeFile
-sim_input/nodes/5A100Inf.cnf
+sim_input/nodes/5A100.cnf
 
-;loadBalancing: edu.isistan.gridgain.spi.loadbalacing.energyaware.GridEnergyAwareLoadBalancing
-;comparator: edu.isistan.gridgain.information.comparator.seas.EnhancedSEASComparator
+;loadBalancing: edu.isistan.edge.proxy.BatchProcessingLoadBalancing
 
 ;batteryFile
 sim_input/device_profile/A100/battery0.cnf; 00000000-0000-0000-0000-000000000001

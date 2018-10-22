@@ -1,5 +1,6 @@
 package edu.isistan.seas.reader;
 
+import edu.isistan.edge.node.DefaultInfiniteBatteryManager;
 import edu.isistan.mobileGrid.node.BatteryManager;
 import edu.isistan.mobileGrid.node.Device;
 import edu.isistan.mobileGrid.node.ExecutionManager;
@@ -16,7 +17,10 @@ public class JobStealingFactory implements ManagerFactory {
     @Override
     public DefaultBatteryManager createBatteryManager(int prof, int charge,
                                                       long estUptime, long batteryCapacityInJoules, boolean isInfinite) {
-        return new JSSEASBatteryManager(prof, charge, estUptime, batteryCapacityInJoules);
+        if (isInfinite)
+            return new DefaultInfiniteBatteryManager();
+        else
+            return new JSSEASBatteryManager(prof, charge, estUptime, batteryCapacityInJoules);
     }
 
     @Override
@@ -32,7 +36,7 @@ public class JobStealingFactory implements ManagerFactory {
 
     @Override
     public Device createDevice(String name, BatteryManager bt, ExecutionManager em, NetworkEnergyManager nem, boolean isInfinite) {
-        return new JSDevice(name, bt, em, nem);
+        return new JSDevice(name, bt, em, nem, !isInfinite);
     }
 
 }

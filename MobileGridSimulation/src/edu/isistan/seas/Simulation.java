@@ -240,6 +240,10 @@ public class Simulation {
         JobStatsUtils.printJobStatesSummary();
         System.out.print("Percentage of completed jobs:");
         System.out.println(((((Integer) (JobStatsUtils.getCompletedJobs() * 100)).floatValue())) / ((Integer) JobStatsUtils.getSize()).floatValue());
+        if (JobStatsUtils.getCompletedJobsInEdge() > 0) {
+            System.out.print("Percentage of completed jobs in edge:");
+            System.out.println(((((Integer) (JobStatsUtils.getCompletedJobsInEdge() * 100)).floatValue())) / ((Integer) JobStatsUtils.getSize()).floatValue());
+        }
         System.out.print("Nodes iddle Time:");
         System.out.println(JobStatsUtils.timeToHours(JobStatsUtils.devicesIddleTime));
         System.out.print("Total executed ops (in GIPs):");

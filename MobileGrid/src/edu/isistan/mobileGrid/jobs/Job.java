@@ -14,6 +14,7 @@ public class Job {
     private int src;
     private int inputSize;
     private int outputSize;
+    private boolean fromEdge;
 
     public Job(long ops, int src, int inputSize, int outputSize) {
         super();
@@ -22,6 +23,7 @@ public class Job {
         this.src = src;
         this.inputSize = inputSize;
         this.outputSize = outputSize;
+        this.fromEdge = false;
     }
 
     public long getOps() {
@@ -58,6 +60,14 @@ public class Job {
 
     public int getJobId() {
         return jobId;
+    }
+
+    public boolean isFromEdge() {
+        return fromEdge;
+    }
+
+    public void setFromEdge(boolean fromEdge) {
+        this.fromEdge = fromEdge;
     }
 
     @Override

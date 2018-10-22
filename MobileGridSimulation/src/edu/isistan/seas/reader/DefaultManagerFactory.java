@@ -1,5 +1,6 @@
 package edu.isistan.seas.reader;
 
+import edu.isistan.edge.node.DefaultInfiniteBatteryManager;
 import edu.isistan.mobileGrid.node.BatteryManager;
 import edu.isistan.mobileGrid.node.Device;
 import edu.isistan.mobileGrid.node.ExecutionManager;
