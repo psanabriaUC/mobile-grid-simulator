@@ -180,6 +180,9 @@ public abstract class SchedulerProxy extends Entity implements Node, DeviceListe
                     JobStatsUtils.setJobTransferCompleted(job, transferInfo.getDestination());
                 }
             } else {
+                if (transferInfo.getCurrentIndex() == 0) {
+                    setJobTotalTransferringTime(transferInfo);
+                }
                 transferInfo.increaseIndex();
             }
 
@@ -260,6 +263,7 @@ public abstract class SchedulerProxy extends Entity implements Node, DeviceListe
      * @param data        The data to send.
      * @param messageSize The size of the data in bytes.
      */
+    @SuppressWarnings("SameParameterValue")
     protected <T> void queueMessageTransfer(Node destination, T data, long messageSize) {
         queueMessageTransfer(destination, data, messageSize, null);
     }

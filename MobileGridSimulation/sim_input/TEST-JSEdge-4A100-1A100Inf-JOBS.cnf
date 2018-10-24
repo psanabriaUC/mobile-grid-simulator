@@ -1,12 +1,13 @@
+;loadBalancing: edu.isistan.seas.proxy.jobstealing.StealerProxy
+
+;comparator: edu.isistan.gridgain.information.comparator.tradeoff.FWC
+;policy: edu.isistan.seas.proxy.jobstealing.ExponentialPolicy
+;strategy: edu.isistan.seas.proxy.jobstealing.BRAStrategy
+
 ;networkEnergyManagementEnable: true
 
 ;nodeFile
 sim_input/nodes/5A100Inf.cnf
-
-;loadBalancing: edu.isistan.edge.proxy.jobstealing.EdgeStealerProxy
-
-;policy: edu.isistan.seas.proxy.jobstealing.FixedNumberPolicy FixedNum=1
-;strategy: edu.isistan.seas.proxy.jobstealing.WRAStrategy
 
 ;batteryFile
 sim_input/device_profile/A100/battery0.cnf; 00000000-0000-0000-0000-000000000001
