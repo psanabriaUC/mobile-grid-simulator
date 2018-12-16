@@ -3,7 +3,10 @@ package edu.isistan.edge.proxy.jobstealing;
 import edu.isistan.edge.proxy.BatchProcessingComparator;
 import edu.isistan.mobileGrid.jobs.Job;
 import edu.isistan.mobileGrid.jobs.JobStatsUtils;
+import edu.isistan.mobileGrid.network.Message;
+import edu.isistan.mobileGrid.network.UpdateMsg;
 import edu.isistan.mobileGrid.node.Device;
+import edu.isistan.mobileGrid.node.SchedulerProxy;
 import edu.isistan.seas.proxy.DeviceComparator;
 import edu.isistan.seas.proxy.jobstealing.StealerProxy;
 import edu.isistan.simulator.Logger;
@@ -30,7 +33,8 @@ public class EdgeStealerProxy extends StealerProxy {
         } else {
             Device selectedDevice = null;
             for (Device device : this.devices.values()) {
-                if (!device.runsOnBattery() && (selectedDevice == null || edgeComparator.compare(device, selectedDevice) <= 0)) {
+                if ((!device.runsOnBattery() || assignedJobs.get(device.getName()) == 0)
+                        && (selectedDevice == null || edgeComparator.compare(device, selectedDevice) <= 0)) {
                     selectedDevice = device;
                 }
             }
@@ -38,7 +42,8 @@ public class EdgeStealerProxy extends StealerProxy {
             if (selectedDevice != null) {
                 queueJobTransferring(selectedDevice, job);
                 assignedJobs.put(selectedDevice.getName(), assignedJobs.get(selectedDevice.getName()) + job.getOps());
-                job.setFromEdge(true);
+                if (!selectedDevice.runsOnBattery())
+                    job.setFromEdge(true);
             }
         }
     }
@@ -58,5 +63,18 @@ public class EdgeStealerProxy extends StealerProxy {
     public void addDevice(Device device) {
         super.addDevice(device);
         assignedJobs.put(device.getName(), 0L);
+    }
+
+    @Override
+    public void onMessageReceived(Message message) {
+        super.onMessageReceived(message);
+        if (message.getData() instanceof UpdateMsg) {
+            UpdateMsg msg = (UpdateMsg)message.getData();
+            Device device = devices.get(msg.getNodeId());
+
+            if (device.getWaitingJobs() == 0) {
+                ((StealerProxy) SchedulerProxy.PROXY).steal(device);
+            }
+        }
     }
 }

@@ -46,6 +46,9 @@ public class StealerProxy extends GridEnergyAwareLoadBalancing {
         for (int i = 0; i < numberOfJobsToSteal && victim.isOnline() && stealer.isOnline(); i++) {
             Job job = victim.removeJob(0);
             Logger.logEntity(victim, "Sending stolen job (id) to stealer (st)", job, stealer);
+            if (stealer.runsOnBattery())
+                job.setFromEdge(false);
+
             queueJobTransferring(stealer, job);
 
             /*

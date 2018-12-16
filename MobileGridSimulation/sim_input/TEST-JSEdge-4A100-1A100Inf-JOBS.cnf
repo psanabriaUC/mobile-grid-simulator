@@ -1,8 +1,8 @@
-;loadBalancing: edu.isistan.seas.proxy.jobstealing.StealerProxy
+;loadBalancing: edu.isistan.edge.proxy.jobstealing.EdgeStealerProxy
 
-;comparator: edu.isistan.gridgain.information.comparator.tradeoff.FWC
+;comparator: edu.isistan.gridgain.information.comparator.seas.EnhancedSEASComparator
 ;policy: edu.isistan.seas.proxy.jobstealing.ExponentialPolicy
-;strategy: edu.isistan.seas.proxy.jobstealing.BRAStrategy
+;strategy: edu.isistan.edge.proxy.jobstealing.EdgeBRAStrategy
 
 ;networkEnergyManagementEnable: true
 
