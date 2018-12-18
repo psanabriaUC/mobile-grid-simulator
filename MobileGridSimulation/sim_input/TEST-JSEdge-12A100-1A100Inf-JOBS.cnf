@@ -1,6 +1,5 @@
 ;loadBalancing: edu.isistan.edge.proxy.jobstealing.EdgeStealerProxy
 
-;comparator: edu.isistan.gridgain.information.comparator.seas.EnhancedSEASComparator
 ;policy: edu.isistan.seas.proxy.jobstealing.ExponentialPolicy
 ;strategy: edu.isistan.edge.proxy.jobstealing.EdgeBRAStrategy
 
@@ -57,7 +56,7 @@ sim_input/device_profile/A100/cpu0.cnf; 00000000-0000-0000-0000-000000000012
 sim_input/device_profile/A100/cpu0.cnf; 00000000-0000-0000-0000-000000000013
 
 ;jobsEvent
-sim_input/jobs/1500_all.cnf
+sim_input/jobs/longCPU.cnf
 
 ;wifiSignalStrength
 -50; 00000000-0000-0000-0000-000000000001

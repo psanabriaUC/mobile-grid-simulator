@@ -7,6 +7,7 @@ import edu.isistan.mobileGrid.network.Message;
 import edu.isistan.mobileGrid.network.UpdateMsg;
 import edu.isistan.mobileGrid.node.Device;
 import edu.isistan.mobileGrid.node.SchedulerProxy;
+import edu.isistan.seas.proxy.DefaultSEASComparator;
 import edu.isistan.seas.proxy.DeviceComparator;
 import edu.isistan.seas.proxy.jobstealing.StealerProxy;
 import edu.isistan.simulator.Logger;
@@ -16,12 +17,11 @@ import java.util.HashMap;
 
 public class EdgeStealerProxy extends StealerProxy {
     private HashMap<String, Long> assignedJobs;
-    private DeviceComparator edgeComparator;
 
     public EdgeStealerProxy(String name) {
         super(name);
         assignedJobs = new HashMap<>();
-        edgeComparator = new BatchProcessingComparator(assignedJobs);
+        devComp = new DefaultSEASComparator();
     }
 
     @Override
@@ -34,7 +34,7 @@ public class EdgeStealerProxy extends StealerProxy {
             Device selectedDevice = null;
             for (Device device : this.devices.values()) {
                 if ((!device.runsOnBattery() || assignedJobs.get(device.getName()) == 0)
-                        && (selectedDevice == null || edgeComparator.compare(device, selectedDevice) <= 0)) {
+                        && (selectedDevice == null || devComp.compare(device, selectedDevice) <= 0)) {
                     selectedDevice = device;
                 }
             }
