@@ -108,6 +108,7 @@ public class Device extends Entity implements Node, DeviceListener {
      */
     private MessageHandler defaultMessageHandler = new MessageHandler();
     private boolean useBattery;
+    private OnFinishJobListener onFinishJobListener;
 
     /**
      * when this flag is true the device informs its State Of Charge every time
@@ -120,6 +121,7 @@ public class Device extends Entity implements Node, DeviceListener {
         this.executionManager = em;
         this.networkEnergyManager = nem;
         this.useBattery = useBattery;
+        onFinishJobListener = null;
     }
 
     /**
@@ -271,6 +273,8 @@ public class Device extends Entity implements Node, DeviceListener {
                 this.executionManager.onFinishJob(job);
 
                 queueMessageTransfer(SchedulerProxy.PROXY, job, job.getOutputSize());
+                if (onFinishJobListener != null)
+                    onFinishJobListener.finished(this, job);
                 break;
             case Device.EVENT_TYPE_DEVICE_START:
                 onStartup();
@@ -544,6 +548,11 @@ public class Device extends Entity implements Node, DeviceListener {
     @Override
     public boolean isReceiving() {
         return isReceiving;
+    }
+
+    public void setOnFinishJobListener(OnFinishJobListener listener)
+    {
+        this.onFinishJobListener = listener;
     }
 
     /**

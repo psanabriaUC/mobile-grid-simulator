@@ -6,61 +6,61 @@ public interface ExecutionManager {
     /**
      * Call when a new jobs arrives
      *
-     * @param job
+     * @param job Job to add
      */
-    public void addJob(Job job);
+    void addJob(Job job);
 
     /**
      * get the number of jobs enqueue
      *
-     * @return
+     * @return nothing
      */
-    public int getJobQueueSize();
+    int getJobQueueSize();
 
     /**
      * removes a job
      *
-     * @param index
+     * @param index index of job to remove
      */
-    public Job removeJob(int index);
+    Job removeJob(int index);
 
     /**
      * Call when a job is finished
      *
      * @param job
      */
-    public void onFinishJob(Job job);
+    void onFinishJob(Job job);
 
     /**
      * Call when a CPU event arrives
      *
      * @param cpuUsage
      */
-    public void onCPUEvent(double cpuUsage);
+    void onCPUEvent(double cpuUsage);
 
     /**
      * Get number of jobs
      *
      * @return
      */
-    public int getNumberOfJobs();
+    int getNumberOfJobs();
 
     /**
      * Get cpu mips
      *
      * @return
      */
-    public long getMIPS();
+    long getMIPS();
 
     /**
      * Get current cpu usage
      *
      * @return
      */
-    public double getCPUUsage();
+    double getCPUUsage();
 
     /**
      * Call when the device shutdown
      */
-    public void shutdown();
+    void shutdown();
 }

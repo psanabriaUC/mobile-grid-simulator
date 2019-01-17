@@ -204,6 +204,21 @@ public class DefaultFiniteBatteryManager implements DefaultBatteryManager {
         //TODO: INCLUDE CALL TO this.updateEstimatedUptime();
     }
 
+    private void getNextEventTime(double nextEventCharge) {
+        // Commented by Matias: The current and the next state of charge are joint with a line whose equation is
+        // (y - b) / a = x, where y is the next state of charge, b is the current charge and a is the slope of
+        // the line that join both state of charge. The equation is used to know the time when the next state
+        // charge will occur. That time is added to the time when the current state of charge happened
+        // (lastMeasurement).
+        double nTime = this.lastMeasurement + (nextEventCharge - this.lastCharge) / this.profiles[this.currentProfile].first().getSlope();
+
+        if (nTime < this.lastMeasurement)
+            throw new IllegalStateException("Next event time is previous (" + nTime + ") to current time (" + this.lastMeasurement + ")");
+        this.lastAddedEvent = Event.createEvent(Event.NO_SOURCE, (long) nTime, this.device.getId(),
+                Device.EVENT_TYPE_BATTERY_UPDATE, this.profiles[this.currentProfile].first().getToCharge());
+        Simulation.addEvent(this.lastAddedEvent);
+    }
+
     @Override
     public void onBatteryEvent(int level) {
         if (level <= 0) {
@@ -222,21 +237,11 @@ public class DefaultFiniteBatteryManager implements DefaultBatteryManager {
 
         this.moveToNext(this.lastCharge, this.currentProfile);
         double nextEventCharge = this.profiles[this.currentProfile].first().getToCharge();
+        getNextEventTime(nextEventCharge);
 
-        // Commented by Matias: The current and the next state of charge are joint with a line whose equation is
-        // (y - b) / a = x, where y is the next state of charge, b is the current charge and a is the slope of
-        // the line that join both state of charge. The equation is used to know the time when the next state
-        // charge will occur. That time is added to the time when the current state of charge happened
-        // (lastMeasurement).
-        double nTime = this.lastMeasurement + (nextEventCharge - this.lastCharge) / this.profiles[this.currentProfile].first().getSlope();
-
-        if (nTime < this.lastMeasurement)
-            throw new IllegalStateException("Next event time is previous (" + nTime + ") to current time (" + this.lastMeasurement + ")");
-        this.lastAddedEvent = Event.createEvent(Event.NO_SOURCE, (long) nTime, this.device.getId(),
-                Device.EVENT_TYPE_BATTERY_UPDATE, this.profiles[this.currentProfile].first().getToCharge());
-        Simulation.addEvent(this.lastAddedEvent);
         this.updateEstimatedUptime();
     }
+
 
     @Override
     public void onUserActivityEvent(boolean screenOn) {
@@ -275,15 +280,7 @@ public class DefaultFiniteBatteryManager implements DefaultBatteryManager {
         this.lastEventTime = Simulation.getTime();
         this.startTime = Simulation.getTime();
         double nextEventCharge = this.profiles[this.currentProfile].first().getToCharge();
-        double nTime = this.lastMeasurement + (nextEventCharge - this.lastCharge) / this.profiles[this.currentProfile].first().getSlope();
-        if (nTime < this.lastMeasurement) {
-            throw new IllegalStateException("Next event time is previous (" + nTime + ") to current time (" +
-                    this.lastMeasurement + ")");
-        }
-
-        this.lastAddedEvent = Event.createEvent(Event.NO_SOURCE, (long) nTime, this.device.getId(),
-                Device.EVENT_TYPE_BATTERY_UPDATE, this.profiles[this.currentProfile].first().getToCharge());
-        Simulation.addEvent(this.lastAddedEvent);
+        getNextEventTime(nextEventCharge);
 
         // debugging line
         // Logger.appendDebugInfo(this.device.getName()+";INI;"+this.lastMeasurement+";"+this.lastCharge+";futEvent:"+lastAddedEvent.getEventId()+"\n");

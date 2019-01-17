@@ -3,6 +3,7 @@ package edu.isistan.edge.proxy;
 import edu.isistan.mobileGrid.jobs.Job;
 import edu.isistan.mobileGrid.jobs.JobStatsUtils;
 import edu.isistan.mobileGrid.node.Device;
+import edu.isistan.mobileGrid.node.OnFinishJobListener;
 import edu.isistan.mobileGrid.node.SchedulerProxy;
 import edu.isistan.seas.proxy.DeviceComparator;
 import edu.isistan.simulator.Event;
@@ -43,6 +44,7 @@ public class BatchProcessingLoadBalancing extends SchedulerProxy {
                     selectedDevice = device;
                 }
             }
+
             if (selectedDevice != null) {
                 queueJobTransferring(selectedDevice, job);
                 assignedJobs.put(selectedDevice.getName(), assignedJobs.get(selectedDevice.getName()) + job.getOps());
@@ -64,6 +66,15 @@ public class BatchProcessingLoadBalancing extends SchedulerProxy {
     public void addDevice(Device device) {
         super.addDevice(device);
         assignedJobs.put(device.getName(), 0L);
+        device.setOnFinishJobListener(new OnFinishJobListener() {
+            @Override
+            public void finished(Device device, Job job) {
+                long ops = assignedJobs.get(device.getName()) - job.getOps();
+                if (ops < 0)
+                    throw new IllegalStateException("Negative remaining OPS");
+                assignedJobs.put(device.getName(), ops);
+            }
+        });
     }
 
     @Override

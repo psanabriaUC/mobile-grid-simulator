@@ -7,6 +7,7 @@ import edu.isistan.mobileGrid.jobs.Job;
 import edu.isistan.mobileGrid.jobs.JobStatsUtils;
 import edu.isistan.mobileGrid.node.Device;
 import edu.isistan.mobileGrid.node.ExecutionManager;
+import edu.isistan.mobileGrid.node.OnFinishJobListener;
 import edu.isistan.simulator.Event;
 import edu.isistan.simulator.Logger;
 import edu.isistan.simulator.Simulation;
