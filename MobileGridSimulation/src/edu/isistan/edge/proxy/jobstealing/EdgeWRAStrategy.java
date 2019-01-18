@@ -7,7 +7,7 @@ import edu.isistan.seas.proxy.jobstealing.StealingStrategy;
 
 import java.util.Collection;
 
-public class EdgeBRAStrategy implements StealingStrategy {
+public class EdgeWRAStrategy implements StealingStrategy {
     @Override
     public Device getVictim(StealerProxy sp, Device stealer) {
         Collection<Device> devices = sp.getDevices();
@@ -23,7 +23,7 @@ public class EdgeBRAStrategy implements StealingStrategy {
                 if (current == null) {
                     current = next;
                 } else {
-                    if ((comparator.compare(next, current) > 0) && (next.getWaitingJobs() > 0) && (next != stealer))
+                    if ((comparator.compare(current, next) > 0) && (next.getWaitingJobs() > 0) && (next != stealer))
                         current = next;
                 }
             }

@@ -1,6 +1,6 @@
 ;loadBalancing: edu.isistan.edge.proxy.jobstealing.EdgeStealerProxy
 
-;policy: edu.isistan.seas.proxy.jobstealing.ExponentialPolicy
+;policy: edu.isistan.seas.proxy.jobstealing.FixedNumberPolicy FixedNum=1
 ;strategy: edu.isistan.edge.proxy.jobstealing.EdgeBRAStrategy
 
 ;networkEnergyManagementEnable: true
