@@ -1,6 +1,5 @@
 package edu.isistan.edge.proxy.jobstealing;
 
-import edu.isistan.edge.proxy.BatchProcessingComparator;
 import edu.isistan.mobileGrid.jobs.Job;
 import edu.isistan.mobileGrid.jobs.JobStatsUtils;
 import edu.isistan.mobileGrid.network.Message;
@@ -8,7 +7,6 @@ import edu.isistan.mobileGrid.network.UpdateMsg;
 import edu.isistan.mobileGrid.node.Device;
 import edu.isistan.mobileGrid.node.SchedulerProxy;
 import edu.isistan.seas.proxy.DefaultSEASComparator;
-import edu.isistan.seas.proxy.DeviceComparator;
 import edu.isistan.seas.proxy.jobstealing.StealerProxy;
 import edu.isistan.simulator.Logger;
 import edu.isistan.simulator.Simulation;
@@ -33,8 +31,7 @@ public class EdgeStealerProxy extends StealerProxy {
         } else {
             Device selectedDevice = null;
             for (Device device : this.devices.values()) {
-                if ((!device.runsOnBattery() || assignedJobs.get(device.getName()) == 0)
-                        && (selectedDevice == null || devComp.compare(device, selectedDevice) <= 0)) {
+                if (!device.runsOnBattery() && (selectedDevice == null || devComp.compare(device, selectedDevice) <= 0)) {
                     selectedDevice = device;
                 }
             }
