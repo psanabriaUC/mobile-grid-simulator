@@ -1,9 +1,12 @@
 ;networkEnergyManagementEnable: true
 
-;nodeFile
-sim_input/nodes/20A100-30GalaxyTab2-50L9-1Inf.cnf
+;loadBalancing: edu.isistan.edge.proxy.jobstealing.EdgeStealerProxy
 
-;loadBalancing: edu.isistan.edge.proxy.BatchProcessingLoadBalancing
+;policy: edu.isistan.seas.proxy.jobstealing.FixedNumberPolicy FixedNum=1
+;strategy: edu.isistan.edge.proxy.jobstealing.EdgeBRAStrategy
+
+;nodeFile
+sim_input/nodes/20A100-30GalaxyTab2-50L9.cnf
 
 ;batteryFile
 sim_input/device_profile/L9/battery0.cnf; 00000000-0000-0000-0000-000000000001
@@ -106,7 +109,6 @@ sim_input/device_profile/GalaxyTab2/battery0.cnf; 00000000-0000-0000-0000-000000
 sim_input/device_profile/L9/battery0.cnf; 00000000-0000-0000-0000-000000000062
 sim_input/device_profile/GalaxyTab2/battery0.cnf; 00000000-0000-0000-0000-000000000063
 sim_input/device_profile/GalaxyTab2/battery0.cnf; 00000000-0000-0000-0000-000000000064
-sim_input/device_profile/GalaxyTab2/battery0.cnf; 00000000-0000-0000-0000-000000000065
 
 ;batteryFullCpuUsageFile
 sim_input/device_profile/L9/battery100.cnf; 00000000-0000-0000-0000-000000000001
@@ -209,7 +211,6 @@ sim_input/device_profile/GalaxyTab2/battery100.cnf; 00000000-0000-0000-0000-0000
 sim_input/device_profile/L9/battery100.cnf; 00000000-0000-0000-0000-000000000062
 sim_input/device_profile/GalaxyTab2/battery100.cnf; 00000000-0000-0000-0000-000000000063
 sim_input/device_profile/GalaxyTab2/battery100.cnf; 00000000-0000-0000-0000-000000000064
-sim_input/device_profile/GalaxyTab2/battery100.cnf; 00000000-0000-0000-0000-000000000065
 
 ;cpuFile
 sim_input/device_profile/L9/cpu0.cnf; 00000000-0000-0000-0000-000000000001
@@ -312,7 +313,6 @@ sim_input/device_profile/GalaxyTab2/cpu0.cnf; 00000000-0000-0000-0000-0000000000
 sim_input/device_profile/L9/cpu0.cnf; 00000000-0000-0000-0000-000000000062
 sim_input/device_profile/GalaxyTab2/cpu0.cnf; 00000000-0000-0000-0000-000000000063
 sim_input/device_profile/GalaxyTab2/cpu0.cnf; 00000000-0000-0000-0000-000000000064
-sim_input/device_profile/GalaxyTab2/cpu0.cnf; 00000000-0000-0000-0000-000000000065
 
 ;userActivity
 sim_input/user_activity/00000000-0000-0000-0000-000000000001.cnf;00000000-0000-0000-0000-000000000001
@@ -415,7 +415,6 @@ sim_input/user_activity/00000000-0000-0000-0000-000000000061.cnf;00000000-0000-0
 sim_input/user_activity/00000000-0000-0000-0000-000000000062.cnf;00000000-0000-0000-0000-000000000062
 sim_input/user_activity/00000000-0000-0000-0000-000000000063.cnf;00000000-0000-0000-0000-000000000063
 sim_input/user_activity/00000000-0000-0000-0000-000000000064.cnf;00000000-0000-0000-0000-000000000064
-sim_input/user_activity/00000000-0000-0000-0000-000000000064.cnf;00000000-0000-0000-0000-000000000065
 
 ;networkActivity
 sim_input/network_activity/00000000-0000-0000-0000-000000000001.cnf;00000000-0000-0000-0000-000000000001
@@ -518,11 +517,10 @@ sim_input/network_activity/00000000-0000-0000-0000-000000000061.cnf;00000000-000
 sim_input/network_activity/00000000-0000-0000-0000-000000000062.cnf;00000000-0000-0000-0000-000000000062
 sim_input/network_activity/00000000-0000-0000-0000-000000000063.cnf;00000000-0000-0000-0000-000000000063
 sim_input/network_activity/00000000-0000-0000-0000-000000000064.cnf;00000000-0000-0000-0000-000000000064
-sim_input/network_activity/00000000-0000-0000-0000-000000000064.cnf;00000000-0000-0000-0000-000000000065
 
 ;jobsEvent
 #jobs/JOBS.cnf
-sim_input/jobs/2500_all.cnf
+sim_input/jobs/1500_all.cnf
 
 ;wifiSignalStrength
 -50; 00000000-0000-0000-0000-000000000001
@@ -625,4 +623,3 @@ sim_input/jobs/2500_all.cnf
 -90; 00000000-0000-0000-0000-000000000062
 -90; 00000000-0000-0000-0000-000000000063
 -90; 00000000-0000-0000-0000-000000000064
--90; 00000000-0000-0000-0000-000000000065
