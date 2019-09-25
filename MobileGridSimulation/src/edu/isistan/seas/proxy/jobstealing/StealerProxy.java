@@ -50,7 +50,7 @@ public class StealerProxy extends GridEnergyAwareLoadBalancing {
                 job.setFromEdge(false);
 
             queueJobTransferring(stealer, job);
-
+            onJobStolen(stealer, victim, job);
             /*
 			// long time = NetworkModel.getModel().send(victim, stealer, NEXT_ID.incrementAndGet(), job.getInputSize(), job);
 
@@ -63,6 +63,8 @@ public class StealerProxy extends GridEnergyAwareLoadBalancing {
             */
         }
     }
+
+    protected void onJobStolen(Device stealer, Device victim, Job job) { }
 
     public StealingPolicy getPolicy() {
         return this.policy;

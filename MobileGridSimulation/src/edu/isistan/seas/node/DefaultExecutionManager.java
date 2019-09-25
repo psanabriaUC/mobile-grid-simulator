@@ -89,7 +89,13 @@ public class DefaultExecutionManager implements ExecutionManager {
      */
     @Override
     public void addJob(Job job) {
+
+        // PATCH: Remove repeated jobs
+        Logger.logEntity(this.device, "PENDING: ", this.pendingJobs);
+        //this.pendingJobs.removeIf(n -> n.getJobId() == job.getJobId());
+
         this.pendingJobs.add(job);
+
         this.startExecute();
         if (isExecuting()) {
             this.batteryManager.onBeginExecutingJobs();
@@ -135,6 +141,9 @@ public class DefaultExecutionManager implements ExecutionManager {
 
         /*Yisel Log*/
         Logger.logJob(job.getJobId(), device.getName(), device.getBatteryLevel(), job.getInputSize(), job.getOutputSize());
+
+        /* My Log */
+        Logger.writeTimestamp();
     }
 
     /**
@@ -214,6 +223,12 @@ public class DefaultExecutionManager implements ExecutionManager {
         if (this.isExecuting() || this.pendingJobs.size() == 0) return;
         //get the next job and update current information
         this.executing = this.pendingJobs.remove(0);
+
+        // PATCH: Remove repeated jobs
+        // Logger.logEntity(this.device, "PENDING: ", this.pendingJobs);
+        //this.pendingJobs.removeIf(n -> n.getJobId() == this.executing.getJobId());
+
+
         Logger.logEntity(this.device, "The device start executing ", this.executing);
         JobStatsUtils.startExecute(this.executing);
 
