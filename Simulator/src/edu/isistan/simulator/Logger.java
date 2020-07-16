@@ -509,4 +509,7 @@ public class Logger {
         DEBUG_OUTPUT_STREAM = debugFile;
     }
 
+    public static void writeTimestamp() {
+        WriteLog("Test-MyStealer-10A100-15GalaxyTab2-25L9-70IOT-JOBS.csv", "", "" + Simulation.getTime());
+    }
 }
